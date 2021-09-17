@@ -1,0 +1,27 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum AuthType {
+  GOOGLE
+  FACEBOOK
+  FIREBASE
+}
+
+model User {
+  userId                String   @id @default(uuid())
+  authType              AuthType
+  name                  String
+  username              String   @unique
+  email                 String   @unique
+  cfg_deadline_reminder Boolean  @default(true)
+  cfg_invites_notif     Boolean  @default(true)
+}
