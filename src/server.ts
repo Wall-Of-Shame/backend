@@ -2,12 +2,14 @@ import cors, { CorsOptions } from "cors";
 import express from "express";
 import helmet from "helmet";
 import { Server } from "http";
+import morgan from "morgan";
 import routes from "./routes";
+
+const API_VERSION = "/api/v1";
 
 const corsOptions: CorsOptions = {
   origin: "*",
 };
-
 export class ApiServer {
   server: Server | undefined;
 
@@ -17,11 +19,14 @@ export class ApiServer {
     app.use(express.urlencoded({ extended: true, limit: "20mb" }));
     app.use(cors(corsOptions));
     app.use(helmet());
-    app.use("/api/v1", routes);
+    app.use(morgan("dev"));
+    app.use(API_VERSION, routes);
 
-    this.server = app.listen(port, () =>
-      console.log(`Server connected successfully on port ${port}`)
-    );
+    const message =
+      `Server connected successfully on port: ${port}.\n` +
+      `Current API version: ${API_VERSION}.`;
+
+    this.server = app.listen(port, () => console.log(message));
     this.server.timeout = 1200000;
   }
 
