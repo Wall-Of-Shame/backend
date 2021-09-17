@@ -5,5 +5,4 @@ export interface PostUser {
   token: string;
   name: string;
   username: string;
-  email: string;
 }

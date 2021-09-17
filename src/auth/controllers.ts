@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { ErrorCode, ErrRes, AuthToken, PostLogin } from "../common/types";
 import { handleServerError } from "../common/utils/handlers";
+import { handleInvalidCredentialsError } from "./handlers";
 import { getUserToken, validateToken } from "./services";
 
 export async function login(
@@ -12,12 +13,7 @@ export async function login(
     const verifiedToken = await validateToken(authType, reqToken);
 
     if (!verifiedToken) {
-      response.status(401).send({
-        error: {
-          code: ErrorCode.INVALID_CREDENTIALS,
-          message: "Invalid credentials given.",
-        },
-      });
+      handleInvalidCredentialsError(request, response);
       return;
     }
 
