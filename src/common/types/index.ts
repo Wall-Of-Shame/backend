@@ -1,2 +1,3 @@
 export { ErrorCode, ErrRes } from "./errors";
-export { PostLogin, PostToken, ResponseToken } from "./auth";
+export { PostLogin, PostToken, AuthType, AuthToken } from "./auth";
+export { PostUser } from "./users";
