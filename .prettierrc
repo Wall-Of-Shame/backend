@@ -1,4 +1,8 @@
 {
   "tabWidth": 2,
-  "useTabs": false
+  "useTabs": false,
+  "printWidth": 80,
+  "semi": true,
+  "importOrder": ["^@core/(.*)$", "^@server/(.*)$", "^@ui/(.*)$", "^[./]"],
+  "importOrderSeparation": true
 }
