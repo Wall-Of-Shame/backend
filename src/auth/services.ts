@@ -1,3 +1,4 @@
+import axios from "axios";
 import admin from "firebase-admin";
 import { OAuth2Client } from "google-auth-library";
 import { sign } from "jsonwebtoken";
@@ -27,7 +28,21 @@ async function authWithGoogle(token: string): Promise<VerifiedToken | null> {
 }
 
 async function authWithFacebook(token: string): Promise<VerifiedToken | null> {
-  return null;
+  const { email } = await axios.get<any, { email: string; name: string }>(
+    "https://graph.facebook.com/me",
+    {
+      params: {
+        fields: ["email"].join(","),
+        access_token: token,
+      },
+    }
+  );
+
+  if (!email) {
+    return null;
+  }
+
+  return { email };
 }
 
 async function authWithFirebase(token: string): Promise<VerifiedToken | null> {
@@ -36,9 +51,6 @@ async function authWithFirebase(token: string): Promise<VerifiedToken | null> {
     .verifyIdToken(token)
     .then((decodedToken) => {
       return decodedToken.email;
-    })
-    .catch((error) => {
-      return null;
     });
 
   if (!firebaseEmail) {

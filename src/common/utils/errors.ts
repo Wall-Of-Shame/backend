@@ -23,3 +23,17 @@ export function handleServerError(_request: Request, response: Response): void {
   });
   return;
 }
+
+export function handleKnownError(
+  _request: Request,
+  response: Response,
+  error: CustomError
+): void {
+  response.status(400).send({
+    error: {
+      code: error.name,
+      message: error.message,
+    },
+  });
+  return;
+}

@@ -4,7 +4,7 @@ import { handleInvalidCredentialsError } from "../auth/handlers";
 import { signToken, validateToken } from "../auth/services";
 import { AuthToken, ErrRes, ErrorCode } from "../common/types";
 import { PostUser } from "../common/types/users";
-import { handleServerError } from "../common/utils/errors";
+import { handleKnownError, handleServerError } from "../common/utils/errors";
 import { createUser } from "./queries";
 
 export async function create(
@@ -37,14 +37,10 @@ export async function create(
     switch (error.name) {
       case ErrorCode.EXISTING_USERNAME:
       case ErrorCode.EXISTING_EMAIL:
-        response.status(400).send({
-          error: {
-            code: error.name,
-            message: error.message,
-          },
-        });
+        handleKnownError(request, response, error);
         return;
       default:
+        console.log(e);
         handleServerError(request, response);
         return;
     }

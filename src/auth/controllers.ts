@@ -5,6 +5,16 @@ import { handleServerError } from "../common/utils/errors";
 import { handleInvalidCredentialsError } from "./handlers";
 import { getUserToken, validateToken } from "./services";
 
+function handleNoExistingUser(_request: Request, response: Response): void {
+  response.status(404).send({
+    error: {
+      code: ErrorCode.NON_EXISTENT_ACCOUNT,
+      message: "Account does not exist",
+    },
+  });
+  return;
+}
+
 export async function login(
   request: Request<any, any, PostLogin, any>,
   response: Response<AuthToken | ErrRes>
@@ -21,18 +31,14 @@ export async function login(
     const token = await getUserToken(verifiedToken);
 
     if (!token) {
-      response.status(404).send({
-        error: {
-          code: ErrorCode.NON_EXISTENT_ACCOUNT,
-          message: "Account does not exist",
-        },
-      });
+      handleNoExistingUser(request, response);
       return;
     }
 
     response.status(200).send(token);
     return;
-  } catch {
+  } catch (e) {
+    console.log("Error: ", e);
     handleServerError(request, response);
     return;
   }
