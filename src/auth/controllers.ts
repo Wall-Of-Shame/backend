@@ -1,7 +1,6 @@
 import { Request, Response } from "express";
 
 import { ErrorCode, ErrRes, AuthToken, PostLogin } from "../common/types";
-import { handleServerError } from "../common/utils/errors";
 import { handleInvalidCredentialsError } from "./handlers";
 import { getUserToken, validateToken } from "./services";
 
@@ -39,7 +38,7 @@ export async function login(
     return;
   } catch (e) {
     console.log("Error: ", e);
-    handleServerError(request, response);
+    handleInvalidCredentialsError(request, response);
     return;
   }
 }

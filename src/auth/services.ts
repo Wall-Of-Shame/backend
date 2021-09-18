@@ -12,51 +12,62 @@ interface VerifiedToken {
 }
 
 async function authWithGoogle(token: string): Promise<VerifiedToken | null> {
-  const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
-  const ticket = await client.verifyIdToken({
-    idToken: token,
-    audience: process.env.GOOGLE_CLIENT_ID,
-  });
-  const payload = ticket.getPayload();
+  try {
+    const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+    const ticket = await client.verifyIdToken({
+      idToken: token,
+      audience: process.env.GOOGLE_CLIENT_ID,
+    });
+    const payload = ticket.getPayload();
 
-  if (!payload || !payload.email) {
-    return null;
+    if (!payload || !payload.email) {
+      return null;
+    }
+    return {
+      email: payload.email,
+    };
+  } catch (e) {
+    throw new Error("Error while verifying token with Google");
   }
-  return {
-    email: payload.email,
-  };
 }
 
 async function authWithFacebook(token: string): Promise<VerifiedToken | null> {
-  const { email } = await axios.get<any, { email: string; name: string }>(
-    "https://graph.facebook.com/me",
-    {
-      params: {
-        fields: ["email"].join(","),
-        access_token: token,
-      },
+  try {
+    const email: string = await axios
+      .get<{ email: string }>("https://graph.facebook.com/me", {
+        params: {
+          fields: ["email"].join(","),
+          access_token: token,
+        },
+      })
+      .then((response) => response.data.email);
+
+    if (!email) {
+      return null;
     }
-  );
 
-  if (!email) {
-    return null;
+    return { email };
+  } catch (e) {
+    throw new Error("Error while verifying token with Facebook");
   }
-
-  return { email };
 }
 
 async function authWithFirebase(token: string): Promise<VerifiedToken | null> {
-  const firebaseEmail = await admin
-    .auth()
-    .verifyIdToken(token)
-    .then((decodedToken) => {
-      return decodedToken.email;
-    });
+  try {
+    const firebaseEmail = await admin
+      .auth()
+      .verifyIdToken(token)
+      .then((decodedToken) => {
+        return decodedToken.email;
+      });
 
-  if (!firebaseEmail) {
-    return null;
+    if (!firebaseEmail) {
+      return null;
+    }
+    return { email: firebaseEmail };
+  } catch (e) {
+    throw new Error("Error while verifying token with Firebase");
   }
-  return { email: firebaseEmail };
 }
 
 // Validates a token based on the authType with external providers.
