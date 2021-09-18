@@ -1,8 +1,10 @@
-import { PostToken, AuthToken } from "../common/types";
+import admin from "firebase-admin";
+import { OAuth2Client } from "google-auth-library";
 import { sign } from "jsonwebtoken";
+
+import { PostToken, AuthToken } from "../common/types";
 import { AuthType } from "../common/types/auth";
 import { findUser } from "./queries";
-import { OAuth2Client } from "google-auth-library";
 
 interface VerifiedToken {
   email: string;
@@ -29,7 +31,20 @@ async function authWithFacebook(token: string): Promise<VerifiedToken | null> {
 }
 
 async function authWithFirebase(token: string): Promise<VerifiedToken | null> {
-  return null;
+  const firebaseEmail = await admin
+    .auth()
+    .verifyIdToken(token)
+    .then((decodedToken) => {
+      return decodedToken.email;
+    })
+    .catch((error) => {
+      return null;
+    });
+
+  if (!firebaseEmail) {
+    return null;
+  }
+  return { email: firebaseEmail };
 }
 
 // Validates a token based on the authType with external providers.

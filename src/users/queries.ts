@@ -1,8 +1,9 @@
 import { PrismaClient, User } from "@prisma/client";
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime";
-import { ErrorCode } from "src/common/types";
-import { AuthType } from "src/common/types/auth";
-import { CustomError } from "src/common/utils/errors";
+
+import { ErrorCode } from "../common/types";
+import { AuthType } from "../common/types/auth";
+import { CustomError } from "../common/utils/errors";
 
 const prisma = new PrismaClient();
 

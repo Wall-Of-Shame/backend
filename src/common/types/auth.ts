@@ -4,6 +4,10 @@ export const enum AuthType {
   FIREBASE = "FIREBASE",
 }
 
+export interface PostToken {
+  token: string;
+}
+
 export interface AuthToken {
   token: string;
 }

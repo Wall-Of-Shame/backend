@@ -1,12 +1,13 @@
 import { Request, Response } from "express";
+
 import { ErrorCode, ErrRes, AuthToken, PostLogin } from "../common/types";
-import { handleServerError } from "../common/utils/handlers";
+import { handleServerError } from "../common/utils/errors";
 import { handleInvalidCredentialsError } from "./handlers";
 import { getUserToken, validateToken } from "./services";
 
 export async function login(
-  request: Request<{}, {}, PostLogin, {}>,
-  response: Response<AuthToken | ErrRes, {}>
+  request: Request<any, any, PostLogin, any>,
+  response: Response<AuthToken | ErrRes>
 ): Promise<void> {
   try {
     const { authType, token: reqToken } = request.body;

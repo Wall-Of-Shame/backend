@@ -1,14 +1,15 @@
 import { Request, Response } from "express";
-import { handleInvalidCredentialsError } from "src/auth/handlers";
-import { signToken, validateToken } from "src/auth/services";
-import { AuthToken, ErrRes, ErrorCode } from "src/common/types";
-import { PostUser } from "src/common/types/users";
-import { handleServerError } from "src/common/utils/handlers";
+
+import { handleInvalidCredentialsError } from "../auth/handlers";
+import { signToken, validateToken } from "../auth/services";
+import { AuthToken, ErrRes, ErrorCode } from "../common/types";
+import { PostUser } from "../common/types/users";
+import { handleServerError } from "../common/utils/errors";
 import { createUser } from "./queries";
 
 export async function create(
-  request: Request<{}, {}, PostUser, {}>,
-  response: Response<AuthToken | ErrRes, {}>
+  request: Request<any, any, PostUser, any>,
+  response: Response<AuthToken | ErrRes>
 ): Promise<void> {
   try {
     const { authType, token: reqToken, name, username } = request.body;
