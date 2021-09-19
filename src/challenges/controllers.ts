@@ -8,6 +8,7 @@ import {
   ChallengePost,
 } from "../common/types/challenges";
 import { handleNotFoundError, handleServerError } from "../common/utils/errors";
+import prisma from "../prisma";
 import { createChallenge, getChallenge } from "./queries";
 
 export async function create(
@@ -24,6 +25,7 @@ export async function create(
         description,
         endAt: parseJSON(endAt),
         type,
+        ownerId: userId,
       },
       select: {
         challengeId: true,
@@ -49,9 +51,21 @@ export async function show(
   try {
     const { challengeId: reqChallengeId } = request.params;
 
-    const challenge = await getChallenge({
+    const challenge = await prisma.challenge.findFirst({
       where: {
         challengeId: reqChallengeId,
+      },
+      include: {
+        owner: {
+          select: {
+            userId: true,
+            username: true,
+            name: true,
+            avatar_animal: true,
+            avatar_color: true,
+            avatar_bg: true,
+          },
+        },
       },
     });
     if (!challenge) {
@@ -59,7 +73,12 @@ export async function show(
       return;
     }
 
-    const { challengeId, title, description, startAt, endAt, type } = challenge;
+    const { challengeId, title, description, startAt, endAt, type, owner } =
+      challenge;
+    const { userId, username, name, avatar_animal, avatar_color, avatar_bg } =
+      owner;
+    // dangerously use !, since it is the last
+    // if it doesn't exist, user should be asked to finish their profile before continuing
     response.status(200).send({
       challengeId,
       title,
@@ -69,17 +88,18 @@ export async function show(
       type,
       participantCount: 0, // TODO
       owner: {
-        userId: "Unsupported",
-        username: "unsupported",
-        name: "unsupprted",
+        userId: userId,
+        username: username ?? undefined,
+        name: name ?? undefined,
         avatar: {
-          animal: "CAT",
-          color: "BROWN",
-          background: "#ffffff",
+          animal: avatar_animal ?? undefined,
+          color: avatar_color ?? undefined,
+          background: avatar_bg ?? undefined,
         },
       },
       participants: [], // TODO
     });
+    return;
   } catch (e) {
     console.log(e);
     handleServerError(request, response);

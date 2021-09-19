@@ -35,6 +35,7 @@ model User {
   avatar_animal         AvatarAnimal?
   avatar_color          AvatarColor?
   avatar_bg             String?
+  Challenge             Challenge[]
 }
 
 model Challenge {
@@ -44,4 +45,6 @@ model Challenge {
   startAt     DateTime?
   endAt       DateTime
   type        ChallengeType
+  ownerId     String
+  owner       User          @relation(fields: [ownerId], references: [userId])
 }
