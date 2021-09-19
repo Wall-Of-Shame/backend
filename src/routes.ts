@@ -3,10 +3,11 @@ import { Router } from "express";
 import auth from "./auth/routes";
 import challenges from "./challenges/routes";
 import proofs from "./proofs/routes";
-import users from "./users/routes";
+import { users, self } from "./users/routes";
 
 const router = Router();
 router.use("/auth", auth);
+router.use("/self", self);
 router.use("/users", users);
 router.use("/challenges", challenges);
 router.use("/proofs", proofs);

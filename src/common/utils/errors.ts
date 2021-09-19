@@ -1,3 +1,4 @@
+import { PrismaClientKnownRequestError } from "@prisma/client/runtime";
 import { Request, Response } from "express";
 
 import { ErrorCode } from "../types";
@@ -8,13 +9,30 @@ export class CustomError extends Error {
     this.name = name;
   }
 }
-/**
- * Handles unexpected errors.
- *
- * @param request
- * @param response
- */
-export function handleServerError(_request: Request, response: Response): void {
+
+// Grabs the meta data from error object
+// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
+export function getMeta(e: any): {
+  target: string[];
+} {
+  const error: PrismaClientKnownRequestError = e;
+
+  if (!error.meta) {
+    // should not happen accd to docs
+    return {
+      target: [],
+    };
+  }
+
+  const meta: { target: string[] } = error.meta as any;
+  return meta;
+}
+
+// Handles unexpected errors.
+export function handleServerError(
+  _request: Request<any, any, any, any>,
+  response: Response<any>
+): void {
   response.status(500).send({
     error: {
       code: ErrorCode.UNKNOWN_ERROR,
@@ -24,6 +42,7 @@ export function handleServerError(_request: Request, response: Response): void {
   return;
 }
 
+// Handles known errors
 export function handleKnownError(
   _request: Request,
   response: Response,
@@ -33,6 +52,17 @@ export function handleKnownError(
     error: {
       code: error.name,
       message: error.message,
+    },
+  });
+  return;
+}
+
+// Handles unauthorised requests
+export function handleUnauthRequest(response: Response): void {
+  response.status(401).send({
+    error: {
+      code: ErrorCode.UNAUTHORIZED,
+      message: "Unauthorised request.",
     },
   });
   return;

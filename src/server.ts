@@ -14,9 +14,10 @@ const corsOptions: CorsOptions = {
 };
 
 function verifyEnvOrReject(): void {
-  const { FIREBASE_DB_URL, GOOGLE_APPLICATION_CREDENTIALS } = process.env;
+  const { FIREBASE_DB_URL, GOOGLE_APPLICATION_CREDENTIALS, JWT_SECRET } =
+    process.env;
 
-  if (!FIREBASE_DB_URL || !GOOGLE_APPLICATION_CREDENTIALS) {
+  if (!FIREBASE_DB_URL || !GOOGLE_APPLICATION_CREDENTIALS || !JWT_SECRET) {
     throw new Error("Environment was not configured properly.");
   }
 }

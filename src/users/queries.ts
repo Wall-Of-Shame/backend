@@ -1,8 +1,8 @@
 import { PrismaClient, User } from "@prisma/client";
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime";
 
-import { ErrorCode } from "../common/types";
-import { CustomError } from "../common/utils/errors";
+import { ErrorCode, UserPatch } from "../common/types";
+import { CustomError, getMeta } from "../common/utils/errors";
 
 const prisma = new PrismaClient();
 
@@ -25,13 +25,7 @@ export async function createUser(data: {
     return user;
   } catch (e) {
     const error: PrismaClientKnownRequestError = e as any;
-
-    if (!error.meta) {
-      // should not happen accd to docs
-      throw new Error(ErrorCode.UNKNOWN_ERROR);
-    }
-
-    const meta: { target: string[] } = error.meta as any;
+    const meta = getMeta(error);
 
     if (meta.target.includes("email")) {
       throw new CustomError(
@@ -69,4 +63,40 @@ export async function getUser(where: {
   });
 
   return user;
+}
+
+export async function patchUser(
+  userId: string,
+  data: UserPatch
+): Promise<void> {
+  const { name, username, avatar } = data;
+
+  try {
+    await prisma.user.update({
+      where: {
+        userId,
+      },
+      data: {
+        username: username,
+        name: name,
+      },
+      select: {
+        userId: true,
+      },
+    });
+    return;
+  } catch (e) {
+    const error: PrismaClientKnownRequestError = e as any;
+    const meta = getMeta(error);
+
+    if (meta.target.includes("username")) {
+      throw new CustomError(
+        ErrorCode.EXISTING_USERNAME,
+        "Username already exists"
+      );
+    } else {
+      console.log(error);
+      throw new Error(ErrorCode.UNKNOWN_ERROR);
+    }
+  }
 }

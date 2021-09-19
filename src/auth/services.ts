@@ -45,10 +45,8 @@ export function getUserToken(user: User): string {
 
 // Signs userId as a token.
 export function signToken(userId: string): string {
-  if (!process.env.JWT_SECRET) {
-    throw new Error("Environment was not configured properly.");
-  }
-
-  const token = sign({ userId }, process.env.JWT_SECRET, { expiresIn: "7d" });
+  // safely assert env variable based on server.ts
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+  const token = sign({ userId }, process.env.JWT_SECRET!, { expiresIn: "7d" });
   return token;
 }
