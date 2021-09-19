@@ -1,3 +1,4 @@
+import { PrismaClient } from "@prisma/client";
 import cors, { CorsOptions } from "cors";
 import express from "express";
 import admin from "firebase-admin";
@@ -5,6 +6,7 @@ import helmet from "helmet";
 import { Server } from "http";
 import morgan from "morgan";
 
+import prisma from "./prisma";
 import routes from "./routes";
 
 const API_VERSION = "/api/v1";
@@ -23,9 +25,12 @@ function verifyEnvOrReject(): void {
 }
 export class ApiServer {
   server: Server | undefined;
+  prisma: PrismaClient | undefined;
 
   async initialize(port = 3001): Promise<void> {
     verifyEnvOrReject();
+
+    this.prisma = prisma;
 
     const app = express();
     app.use(express.json({ limit: "20mb" }));

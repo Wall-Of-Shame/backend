@@ -20,6 +20,11 @@ enum AvatarColor {
   BROWN
 }
 
+enum ChallengeType {
+  LAST_TO_COMPLETE
+  NOT_COMPLETED
+}
+
 model User {
   userId                String        @id @default(uuid())
   email                 String        @unique
@@ -30,4 +35,13 @@ model User {
   avatar_animal         AvatarAnimal?
   avatar_color          AvatarColor?
   avatar_bg             String?
+}
+
+model Challenge {
+  challengeId String        @id @default(uuid())
+  title       String
+  description String?
+  startAt     DateTime?
+  endAt       DateTime
+  type        ChallengeType
 }

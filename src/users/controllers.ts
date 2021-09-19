@@ -4,7 +4,11 @@ import { Request, Response } from "express";
 import { challengeCount } from "../challenges/queries";
 import { Payload } from "../common/middlewares/checkToken";
 import { UserPatch, UserData } from "../common/types";
-import { handleNotFoundError, handleServerError } from "../common/utils/errors";
+import {
+  handleNotFoundError,
+  handleServerError,
+  handleUnauthRequest,
+} from "../common/utils/errors";
 import { getUser, patchUser } from "./queries";
 
 export async function show(
@@ -16,7 +20,7 @@ export async function show(
       userId: response.locals.payload.userId,
     });
     if (!user) {
-      handleNotFoundError(response, "User does not exists.");
+      handleUnauthRequest(response);
       return;
     }
 
@@ -70,7 +74,6 @@ export async function update(
     // TODO: add 404
     return;
   } catch (e) {
-    console.log(e);
     handleServerError(request, response);
     return;
   }
