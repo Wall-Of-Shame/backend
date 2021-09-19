@@ -35,7 +35,8 @@ export async function create(
 
     switch (error.name) {
       case ErrorCode.EXISTING_USERNAME:
-      case ErrorCode.EXISTING_EMAIL:
+      case ErrorCode.EXISTING_ACCOUNT:
+      case ErrorCode.INVALID_CREDENTIALS:
         handleKnownError(request, response, error);
         return;
       default:

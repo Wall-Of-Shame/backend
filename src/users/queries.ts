@@ -37,7 +37,10 @@ export async function createUser(data: {
     const meta: { target: string[] } = error.meta as any;
 
     if (meta.target.includes("email")) {
-      throw new CustomError(ErrorCode.EXISTING_EMAIL, "Email already exists.");
+      throw new CustomError(
+        ErrorCode.EXISTING_ACCOUNT,
+        "Account already exists."
+      );
     } else if (meta.target.includes("username")) {
       throw new CustomError(
         ErrorCode.EXISTING_USERNAME,

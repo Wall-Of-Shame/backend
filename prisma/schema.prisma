@@ -10,12 +10,6 @@ generator client {
   provider = "prisma-client-js"
 }
 
-enum AuthType {
-  GOOGLE
-  FACEBOOK
-  FIREBASE
-}
-
 model User {
   userId                String  @id @default(uuid())
   name                  String

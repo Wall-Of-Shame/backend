@@ -1,7 +1,8 @@
 import admin from "firebase-admin";
 import { sign } from "jsonwebtoken";
 
-import { AuthToken } from "../common/types";
+import { AuthToken, ErrorCode } from "../common/types";
+import { CustomError } from "../common/utils/errors";
 import { findUser } from "./queries";
 
 interface VerifiedToken {
@@ -22,7 +23,10 @@ async function authWithFirebase(token: string): Promise<VerifiedToken | null> {
     }
     return { email: firebaseEmail };
   } catch (e) {
-    throw new Error("Error while verifying token with Firebase");
+    throw new CustomError(
+      ErrorCode.INVALID_CREDENTIALS,
+      "Invalid credentials given"
+    );
   }
 }
 

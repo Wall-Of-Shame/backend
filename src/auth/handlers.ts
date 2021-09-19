@@ -15,7 +15,7 @@ export function handleInvalidCredentialsError(
   response.status(401).send({
     error: {
       code: ErrorCode.INVALID_CREDENTIALS,
-      message: "Invalid credentials given.",
+      message: "Invalid credentials given",
     },
   });
   return;
