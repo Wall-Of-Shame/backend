@@ -1,16 +1,60 @@
+import { User } from "@prisma/client";
 import { Request, Response } from "express";
 
+import { challengeCount } from "../challenges/queries";
 import { Payload } from "../common/middlewares/checkToken";
-import { UserPatch } from "../common/types";
-import { handleServerError } from "../common/utils/errors";
-import { patchUser } from "./queries";
+import { UserPatch, UserData } from "../common/types";
+import { handleNotFoundError, handleServerError } from "../common/utils/errors";
+import { getUser, patchUser } from "./queries";
+
+export async function show(
+  request: Request<any, any, any, any>,
+  response: Response<UserData, Payload>
+): Promise<void> {
+  try {
+    const user: User | null = await getUser({
+      userId: response.locals.payload.userId,
+    });
+    if (!user) {
+      handleNotFoundError(response, "User does not exists.");
+      return;
+    }
+
+    const {
+      userId,
+      email,
+      username,
+      name,
+      cfg_deadline_reminder,
+      cfg_invites_notif,
+    } = user;
+    const { completedChallengeCount, failedChallengeCount } =
+      await challengeCount(userId);
+    response.status(200).send({
+      userId,
+      email,
+      username: username ?? undefined,
+      name: name ?? undefined,
+      completedChallengeCount: username ? completedChallengeCount : undefined,
+      failedChallengeCount: username ? failedChallengeCount : undefined,
+      settings: {
+        deadlineReminder: cfg_deadline_reminder,
+        invitations: cfg_invites_notif,
+      },
+    });
+    return;
+  } catch (e) {
+    console.log(e);
+    handleServerError(request, response);
+    return;
+  }
+}
 
 export async function update(
   request: Request<any, any, UserPatch, any>,
   response: Response<Record<string, never>, Payload>
 ): Promise<void> {
   try {
-    console.log("payload", response.locals.payload);
     const { userId } = response.locals.payload;
 
     await patchUser(userId, request.body);

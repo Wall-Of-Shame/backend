@@ -67,3 +67,14 @@ export function handleUnauthRequest(response: Response): void {
   });
   return;
 }
+
+// Handles not found error
+export function handleNotFoundError(response: Response, message: string): void {
+  response.status(404).send({
+    error: {
+      code: ErrorCode.NOT_FOUND,
+      message,
+    },
+  });
+  return;
+}

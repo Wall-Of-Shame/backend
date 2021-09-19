@@ -1,7 +1,7 @@
 import { Router } from "express";
 
 import { checkValidToken } from "../common/middlewares/checkToken";
-import { update } from "./controllers";
+import { show, update } from "./controllers";
 
 export const users = Router();
 
@@ -11,6 +11,6 @@ export const self = Router();
 
 self.get("/friends");
 self.use(checkValidToken);
-self.get("");
+self.get("", show);
 
 self.patch("", update);

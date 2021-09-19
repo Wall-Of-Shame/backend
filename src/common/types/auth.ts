@@ -1,4 +1,4 @@
-import { User } from "./users";
+import { UserData } from "./users";
 
 // Input schema for the `POST /auth` route.
 export interface AuthReq {
@@ -8,5 +8,5 @@ export interface AuthReq {
 // Response schema for the `POST /auth` route.
 export interface AuthRes {
   token: string;
-  user: User;
+  user: UserData;
 }

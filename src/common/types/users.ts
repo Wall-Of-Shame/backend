@@ -11,8 +11,8 @@ export interface UserList {
   failedChallengeCount: number;
 }
 
-// Return schema for the `GET /users/:userId` route.
-export interface User {
+// Return schema for the `GET /self` route.
+export interface UserData {
   userId: string;
   email: string;
   username?: string;
@@ -25,7 +25,7 @@ export interface User {
   };
 }
 
-// Return schema for the `GET /users/:userId/friends` route.
+// Return schema for the `GET /self/friends` route.
 export interface UserFriends {
   userId: string;
   name: string;
@@ -33,7 +33,7 @@ export interface UserFriends {
   befriendedAt: string;
 }
 
-// Input schema for the `PATCH /users` route.
+// Input schema for the `PATCH /self` route.
 export interface UserPatch {
   name: string;
   username: string;
