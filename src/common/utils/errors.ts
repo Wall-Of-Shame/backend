@@ -44,7 +44,7 @@ export function handleServerError(
 
 // Handles known errors
 export function handleKnownError(
-  _request: Request,
+  _request: Request<any, any, any, any>,
   response: Response,
   error: CustomError
 ): void {

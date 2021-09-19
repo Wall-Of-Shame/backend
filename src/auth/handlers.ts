@@ -9,7 +9,7 @@ import { ErrorCode } from "../common/types";
  * @param response
  */
 export function handleInvalidCredentialsError(
-  _request: Request,
+  _request: Request<any, any, any, any>,
   response: Response
 ): void {
   response.status(401).send({

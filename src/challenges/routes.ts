@@ -1,14 +1,14 @@
 import { Router } from "express";
 
 import { checkValidToken } from "../common/middlewares/checkToken";
-import { create, show } from "./controllers";
+import { acceptChallenge, create, show } from "./controllers";
 
 const router = Router();
 router.use(checkValidToken);
 
-router.post("/accept");
-router.post("/reject");
-router.post("/complete");
+router.post("/:challengeId/accept", acceptChallenge);
+router.post("/:challengeId/reject");
+router.post("/:challengeId/complete");
 router.post("/:challengeId/proofs");
 router.post("", create);
 

@@ -1,17 +1,25 @@
+import { PrismaClientKnownRequestError } from "@prisma/client/runtime";
 import parseJSON from "date-fns/parseJSON";
 import { Request, Response } from "express";
 
+import { handleInvalidCredentialsError } from "../auth/handlers";
 import { Payload } from "../common/middlewares/checkToken";
+import { ErrorCode } from "../common/types";
 import {
   ChallengeData,
   ChallengeId,
   ChallengePost,
   UserMini,
 } from "../common/types/challenges";
-import { handleNotFoundError, handleServerError } from "../common/utils/errors";
+import {
+  CustomError,
+  handleKnownError,
+  handleNotFoundError,
+  handleServerError,
+} from "../common/utils/errors";
 import prisma from "../prisma";
 import { createChallenge } from "./queries";
-import { InviteStatus } from ".prisma/client";
+import { isChallengeOver } from "./utils";
 
 export async function create(
   request: Request<any, any, ChallengePost, any>,
@@ -21,7 +29,9 @@ export async function create(
     const { userId } = response.locals.payload;
 
     const { title, description, endAt, type, participants } = request.body;
+
     const participantsMinusOwner = participants.filter((p) => p !== userId);
+    const currentDate = new Date();
     const { challengeId } = await createChallenge({
       data: {
         title,
@@ -34,11 +44,11 @@ export async function create(
             data: [
               ...participantsMinusOwner.map((pId) => ({
                 userId: pId,
-                invite_status: InviteStatus.PENDING,
+                joined_at: currentDate,
               })),
               {
                 userId: userId,
-                invite_status: InviteStatus.ACCEPTED,
+                joined_at: currentDate,
               },
             ],
             skipDuplicates: true,
@@ -50,7 +60,7 @@ export async function create(
       },
     });
 
-    response.set("Location", "/challenges/" + challengeId);
+    response.set("location", "/challenges/" + challengeId);
     response.status(200).send({
       challengeId,
     });
@@ -141,9 +151,9 @@ export async function show(
         },
       };
 
-      if (participant.invite_status === InviteStatus.ACCEPTED) {
+      if (participant.joined_at) {
         accepted.push(formattedUser);
-      } else if (participant.invite_status === InviteStatus.PENDING) {
+      } else {
         pending.push(formattedUser);
       }
     }
@@ -171,6 +181,82 @@ export async function show(
         pending,
       },
     });
+    return;
+  } catch (e) {
+    console.log(e);
+    handleServerError(request, response);
+    return;
+  }
+}
+
+export async function acceptChallenge(
+  request: Request<ChallengeId, any, any, any>,
+  response: Response<any, Payload>
+): Promise<void> {
+  try {
+    const { userId } = response.locals.payload;
+    const { challengeId } = request.params;
+
+    if (!userId) {
+      handleInvalidCredentialsError(request, response);
+      return;
+    }
+    if (!challengeId) {
+      handleServerError(request, response);
+      return;
+    }
+
+    const challenge = await prisma.challenge.findUnique({
+      where: { challengeId },
+      select: { challengeId: true, endAt: true },
+    });
+    if (!challenge || isChallengeOver(challenge.endAt)) {
+      handleKnownError(
+        request,
+        response,
+        new CustomError(ErrorCode.CHALLENGE_OVER, "Challenge is over.")
+      );
+      return;
+    }
+
+    const currentDate = new Date();
+    try {
+      await prisma.participant.update({
+        where: {
+          challengeId_userId: {
+            challengeId,
+            userId,
+          },
+        },
+        data: {
+          joined_at: currentDate,
+        },
+        select: {
+          userId: true,
+          challengeId: true,
+        },
+      });
+    } catch (e) {
+      const error: PrismaClientKnownRequestError = e as any;
+      // Participant entry not found - likely to be invited by link
+      if (error.code === "P2025") {
+        await prisma.participant.create({
+          data: {
+            userId,
+            challengeId,
+            joined_at: currentDate,
+          },
+          select: {
+            userId: true,
+            challengeId: true,
+          },
+        });
+      } else {
+        throw e;
+      }
+    }
+
+    response.status(200).send({});
     return;
   } catch (e) {
     console.log(e);

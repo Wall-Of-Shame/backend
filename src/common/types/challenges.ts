@@ -31,10 +31,29 @@ export interface ChallengeData {
   };
 }
 
+// Return schema for the `GET /challenges` route
+export interface ChallengeList {
+  ongoing: ChallengeMini[];
+  pending: ChallengeMini[];
+  history: ChallengeMini[];
+}
+
 // Internal type. They do not match to any route specifically, but rather used to construct them.
 export type UserMini = Pick<
   UserList,
   "userId" | "username" | "name" | "avatar"
+>;
+
+type ChallengeMini = Pick<
+  ChallengeData,
+  | "challengeId"
+  | "title"
+  | "description"
+  | "startAt"
+  | "endAt"
+  | "participantCount"
+  | "type"
+  | "owner"
 >;
 
 // Deep partial of UserMini
