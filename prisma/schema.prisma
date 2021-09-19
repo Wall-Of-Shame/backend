@@ -12,9 +12,9 @@ generator client {
 
 model User {
   userId                String  @id @default(uuid())
-  name                  String
-  username              String  @unique
   email                 String  @unique
+  username              String? @unique
+  name                  String?
   cfg_deadline_reminder Boolean @default(true)
   cfg_invites_notif     Boolean @default(true)
 }

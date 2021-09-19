@@ -7,21 +7,18 @@ import { CustomError } from "../common/utils/errors";
 const prisma = new PrismaClient();
 
 export async function createUser(data: {
-  name: string;
-  username: string;
   email: string;
-}): Promise<Pick<User, "userId">> {
+  name?: string;
+  username?: string;
+}): Promise<User> {
   const { username, name, email } = data;
 
   try {
     const user = await prisma.user.create({
       data: {
-        username: username,
-        name: name,
-        email: email,
-      },
-      select: {
-        userId: true,
+        email,
+        name,
+        username,
       },
     });
 
@@ -50,4 +47,26 @@ export async function createUser(data: {
       throw new Error(ErrorCode.UNKNOWN_ERROR);
     }
   }
+}
+
+// Finds a single user. At least one of the inputs should be given.
+export async function getUser(where: {
+  userId?: string;
+  username?: string;
+  email?: string;
+}): Promise<User | null> {
+  const { userId, username, email } = where;
+  if (!userId && !username && !email) {
+    return null;
+  }
+
+  const user = await prisma.user.findFirst({
+    where: {
+      userId,
+      username,
+      email,
+    },
+  });
+
+  return user;
 }

@@ -1,7 +1,12 @@
-export interface AuthToken {
+import { User } from "./users";
+
+// Input schema for the `POST /auth` route.
+export interface AuthReq {
   token: string;
 }
 
-export interface PostLogin {
+// Response schema for the `POST /auth` route.
+export interface AuthRes {
   token: string;
+  user: User;
 }

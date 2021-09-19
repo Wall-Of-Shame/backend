@@ -1,9 +1,9 @@
+import { User } from "@prisma/client";
 import admin from "firebase-admin";
 import { sign } from "jsonwebtoken";
 
-import { AuthToken, ErrorCode } from "../common/types";
+import { ErrorCode } from "../common/types";
 import { CustomError } from "../common/utils/errors";
-import { findUser } from "./queries";
 
 interface VerifiedToken {
   email: string;
@@ -38,26 +38,17 @@ export async function validateToken(
 }
 
 // Retrieves the token for the user.
-export async function getUserToken(
-  verifiedToken: VerifiedToken
-): Promise<AuthToken | null> {
-  const { email } = verifiedToken;
-
-  const user = await findUser({ email });
-  if (!user) {
-    return null;
-  }
-
+export function getUserToken(user: User): string {
   const { userId } = user;
   return signToken(userId);
 }
 
 // Signs userId as a token.
-export function signToken(userId: string): AuthToken {
+export function signToken(userId: string): string {
   if (!process.env.JWT_SECRET) {
     throw new Error("Environment was not configured properly.");
   }
 
   const token = sign({ userId }, process.env.JWT_SECRET, { expiresIn: "7d" });
-  return { token };
+  return token;
 }
