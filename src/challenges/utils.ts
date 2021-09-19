@@ -5,14 +5,25 @@
 // => show: hmm maybe no need
 // => accept: X ended. Allow for after start, then joined.
 // => reject: need. Should it be after it started, then no rejecting? or after it has ended, no reject
+// => complete: has to be running
 import { isBefore } from "date-fns";
 
 // checks if the challenge is over
 export function isChallengeOver(end: Date): boolean {
-  return isBefore(new Date(), end);
+  return !isBefore(new Date(), end);
 }
 
-// checks if
+// checks if challenge start is before its end
 export function startBeforeEnd(start: Date, end: Date): boolean {
   return isBefore(start, end);
+}
+
+// checks if the challenge is currently running ie start <= current <= end
+export function isChallengeRunning(start: Date | null, end: Date): boolean {
+  if (!start) {
+    // challenge has not started
+    return false;
+  }
+  const now = new Date();
+  return isBefore(start, now) && isBefore(now, end);
 }

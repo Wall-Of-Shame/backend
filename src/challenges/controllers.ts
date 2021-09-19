@@ -19,7 +19,7 @@ import {
 } from "../common/utils/errors";
 import prisma from "../prisma";
 import { createChallenge } from "./queries";
-import { isChallengeOver } from "./utils";
+import { isChallengeOver, isChallengeRunning } from "./utils";
 
 export async function create(
   request: Request<any, any, ChallengePost, any>,
@@ -267,7 +267,7 @@ export async function acceptChallenge(
 
 export async function rejectChallenge(
   request: Request<ChallengeId, any, any, any>,
-  response: Response<{}, Payload>
+  response: Response<any, Payload>
 ): Promise<void> {
   try {
     const { userId } = response.locals.payload;
@@ -310,6 +310,75 @@ export async function rejectChallenge(
 
     response.status(200).send({});
     return;
+  } catch (e) {
+    console.log(e);
+    handleServerError(request, response);
+    return;
+  }
+}
+
+export async function completeChallenge(
+  request: Request<ChallengeId, any, any, any>,
+  response: Response<any, Payload>
+): Promise<void> {
+  try {
+    const { userId } = response.locals.payload;
+    const { challengeId } = request.params;
+
+    if (!userId) {
+      handleInvalidCredentialsError(request, response);
+      return;
+    }
+    if (!challengeId) {
+      handleServerError(request, response);
+      return;
+    }
+
+    const challenge = await prisma.challenge.findUnique({
+      where: { challengeId },
+      select: { challengeId: true, startAt: true, endAt: true },
+    });
+    if (!challenge || !isChallengeRunning(challenge.startAt, challenge.endAt)) {
+      handleKnownError(
+        request,
+        response,
+        new CustomError(
+          ErrorCode.CHALLENGE_NOT_RUNNING,
+          "Challenge is not running."
+        )
+      );
+      return;
+    }
+
+    let didUpdate = false;
+    try {
+      await prisma.participant.update({
+        where: {
+          challengeId_userId: {
+            challengeId,
+            userId,
+          },
+        },
+        data: {
+          completed_at: new Date(),
+        },
+        select: {
+          userId: true,
+          challengeId: true,
+        },
+      });
+      didUpdate = true;
+    } catch (e) {
+      didUpdate = false;
+    }
+
+    if (didUpdate) {
+      response.status(200).send({});
+      return;
+    } else {
+      handleNotFoundError(response, "User has not accepted this challenge.");
+      return;
+    }
   } catch (e) {
     console.log(e);
     handleServerError(request, response);
