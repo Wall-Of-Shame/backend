@@ -38,6 +38,9 @@ export async function login(
       name,
       cfg_deadline_reminder,
       cfg_invites_notif,
+      avatar_animal,
+      avatar_color,
+      avatar_bg,
     } = user;
     const { completedChallengeCount, failedChallengeCount } =
       await challengeCount(user.userId);
@@ -47,9 +50,14 @@ export async function login(
         userId,
         email,
         username: username ?? undefined,
-        name: name ?? undefined,
+        name: username && name ? name : undefined,
         completedChallengeCount: username ? completedChallengeCount : undefined,
         failedChallengeCount: username ? failedChallengeCount : undefined,
+        avatar: {
+          animal: username && avatar_animal ? avatar_animal : undefined,
+          color: username && avatar_color ? avatar_color : undefined,
+          background: username && avatar_bg ? avatar_bg : undefined,
+        },
         settings: {
           deadlineReminder: cfg_deadline_reminder,
           invitations: cfg_invites_notif,

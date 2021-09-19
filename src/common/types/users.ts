@@ -2,7 +2,8 @@ export interface UserId {
   userId: string;
 }
 
-// Response schema for the `GET /users` route.
+// Partial response schema for the `GET /users` route.
+// Full response is Array<UserList>
 export interface UserList {
   userId: string;
   name: string;
@@ -19,27 +20,37 @@ export interface UserData {
   name?: string;
   completedChallengeCount?: number;
   failedChallengeCount?: number;
+  avatar: Partial<Avatar>;
   settings: {
     deadlineReminder: boolean;
     invitations: boolean;
   };
 }
 
-// Return schema for the `GET /self/friends` route.
+// Partial return schema for the `GET /self/friends` route.
+// Full response is Array<UserList>
 export interface UserFriends {
   userId: string;
   name: string;
   username: string;
   befriendedAt: string;
+  avatar: Avatar;
 }
 
 // Input schema for the `PATCH /self` route.
 export interface UserPatch {
   name: string;
   username: string;
-  avatar: {
-    animal?: "CAT" | "DOG" | "RABBIT";
-    color?: string;
-    background?: string;
+  avatar: Partial<Avatar>;
+  settings: {
+    deadlineReminder?: boolean;
+    invitations?: boolean;
   };
+}
+
+// Private interfaces
+interface Avatar {
+  animal: "CAT" | "DOG" | "RABBIT";
+  color: "BROWN";
+  background: string;
 }

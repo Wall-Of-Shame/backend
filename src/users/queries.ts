@@ -70,6 +70,7 @@ export async function patchUser(
   data: UserPatch
 ): Promise<void> {
   const { name, username, avatar } = data;
+  const { animal, color, background } = avatar;
 
   try {
     await prisma.user.update({
@@ -79,6 +80,9 @@ export async function patchUser(
       data: {
         username: username,
         name: name,
+        avatar_animal: animal,
+        avatar_color: color,
+        avatar_bg: background,
       },
       select: {
         userId: true,
