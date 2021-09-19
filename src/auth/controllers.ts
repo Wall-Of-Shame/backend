@@ -19,8 +19,8 @@ export async function login(
   response: Response<AuthToken | ErrRes>
 ): Promise<void> {
   try {
-    const { authType, token: reqToken } = request.body;
-    const verifiedToken = await validateToken(authType, reqToken);
+    const { token: reqToken } = request.body;
+    const verifiedToken = await validateToken(reqToken);
 
     if (!verifiedToken) {
       handleInvalidCredentialsError(request, response);

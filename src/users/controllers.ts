@@ -12,8 +12,8 @@ export async function create(
   response: Response<AuthToken | ErrRes>
 ): Promise<void> {
   try {
-    const { authType, token: reqToken, name, username } = request.body;
-    const verifiedToken = await validateToken(authType, reqToken);
+    const { token: reqToken, name, username } = request.body;
+    const verifiedToken = await validateToken(reqToken);
 
     if (!verifiedToken || !verifiedToken.email) {
       handleInvalidCredentialsError(request, response);
@@ -21,7 +21,6 @@ export async function create(
     }
 
     const user = await createUser({
-      authType,
       username,
       name,
       email: verifiedToken.email,

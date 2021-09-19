@@ -1,8 +1,6 @@
-import { AuthType } from "./auth";
+import { PostLogin } from "./";
 
-export interface PostUser {
-  authType: AuthType;
-  token: string;
+export interface PostUser extends PostLogin {
   name: string;
   username: string;
 }

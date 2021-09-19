@@ -2,23 +2,20 @@ import { PrismaClient, User } from "@prisma/client";
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime";
 
 import { ErrorCode } from "../common/types";
-import { AuthType } from "../common/types/auth";
 import { CustomError } from "../common/utils/errors";
 
 const prisma = new PrismaClient();
 
 export async function createUser(data: {
-  authType: AuthType;
   name: string;
   username: string;
   email: string;
 }): Promise<Pick<User, "userId">> {
-  const { authType, username, name, email } = data;
+  const { username, name, email } = data;
 
   try {
     const user = await prisma.user.create({
       data: {
-        authType: authType,
         username: username,
         name: name,
         email: email,

@@ -17,11 +17,10 @@ enum AuthType {
 }
 
 model User {
-  userId                String   @id @default(uuid())
-  authType              AuthType
+  userId                String  @id @default(uuid())
   name                  String
-  username              String   @unique
-  email                 String   @unique
-  cfg_deadline_reminder Boolean  @default(true)
-  cfg_invites_notif     Boolean  @default(true)
+  username              String  @unique
+  email                 String  @unique
+  cfg_deadline_reminder Boolean @default(true)
+  cfg_invites_notif     Boolean @default(true)
 }

@@ -23,7 +23,7 @@ function verifyEnvOrReject(): void {
 export class ApiServer {
   server: Server | undefined;
 
-  async initialize(port = 3000): Promise<void> {
+  async initialize(port = 3001): Promise<void> {
     verifyEnvOrReject();
 
     const app = express();
