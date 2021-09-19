@@ -264,3 +264,55 @@ export async function acceptChallenge(
     return;
   }
 }
+
+export async function rejectChallenge(
+  request: Request<ChallengeId, any, any, any>,
+  response: Response<{}, Payload>
+): Promise<void> {
+  try {
+    const { userId } = response.locals.payload;
+    const { challengeId } = request.params;
+
+    if (!userId) {
+      handleInvalidCredentialsError(request, response);
+      return;
+    }
+    if (!challengeId) {
+      handleServerError(request, response);
+      return;
+    }
+
+    const challenge = await prisma.challenge.findUnique({
+      where: { challengeId },
+      select: { challengeId: true, endAt: true },
+    });
+    if (!challenge || isChallengeOver(challenge.endAt)) {
+      handleKnownError(
+        request,
+        response,
+        new CustomError(ErrorCode.CHALLENGE_OVER, "Challenge is over.")
+      );
+      return;
+    }
+
+    try {
+      await prisma.participant.delete({
+        where: {
+          challengeId_userId: {
+            challengeId,
+            userId,
+          },
+        },
+      });
+    } catch (e) {
+      // do nothing
+    }
+
+    response.status(200).send({});
+    return;
+  } catch (e) {
+    console.log(e);
+    handleServerError(request, response);
+    return;
+  }
+}
