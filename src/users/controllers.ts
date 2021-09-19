@@ -4,11 +4,7 @@ import { Request, Response } from "express";
 import { challengeCount } from "../challenges/queries";
 import { Payload } from "../common/middlewares/checkToken";
 import { UserPatch, UserData } from "../common/types";
-import {
-  handleNotFoundError,
-  handleServerError,
-  handleUnauthRequest,
-} from "../common/utils/errors";
+import { handleServerError, handleUnauthRequest } from "../common/utils/errors";
 import { getUser, patchUser } from "./queries";
 
 export async function show(

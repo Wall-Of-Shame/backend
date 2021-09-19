@@ -25,11 +25,17 @@ export interface ChallengeData {
   participantCount: number;
   type: ChallengeType;
   owner: DeepPartialUserMini;
-  participants: UserMini[];
+  participants: {
+    accepted: UserMini[];
+    pending: UserMini[];
+  };
 }
 
-// Internal types
-type UserMini = Pick<UserList, "userId" | "username" | "name" | "avatar">;
+// Internal type. They do not match to any route specifically, but rather used to construct them.
+export type UserMini = Pick<
+  UserList,
+  "userId" | "username" | "name" | "avatar"
+>;
 
 // Deep partial of UserMini
 // This is to support the corner case of user being able to create a challenge without having a username/name/avatar

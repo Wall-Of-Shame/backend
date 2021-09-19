@@ -1,8 +1,6 @@
 import { Challenge, Prisma } from "@prisma/client";
-import { PrismaClientKnownRequestError } from "@prisma/client/runtime";
 
 import { ErrorCode } from "../common/types";
-import { CustomError, getMeta } from "../common/utils/errors";
 import prisma from "../prisma";
 
 // Counts the completedChallengeCount and failedChallengeCount for given user.

@@ -25,6 +25,11 @@ enum ChallengeType {
   NOT_COMPLETED
 }
 
+enum InviteStatus {
+  ACCEPTED
+  PENDING
+}
+
 model User {
   userId                String        @id @default(uuid())
   email                 String        @unique
@@ -35,16 +40,31 @@ model User {
   avatar_animal         AvatarAnimal?
   avatar_color          AvatarColor?
   avatar_bg             String?
-  Challenge             Challenge[]
+  owner_of              Challenge[]
+  participating_in      Participant[]
 }
 
 model Challenge {
-  challengeId String        @id @default(uuid())
-  title       String
-  description String?
-  startAt     DateTime?
-  endAt       DateTime
-  type        ChallengeType
-  ownerId     String
-  owner       User          @relation(fields: [ownerId], references: [userId])
+  challengeId  String        @id @default(uuid())
+  title        String
+  description  String?
+  startAt      DateTime?
+  endAt        DateTime
+  type         ChallengeType
+  ownerId      String
+  owner        User          @relation(fields: [ownerId], references: [userId])
+  participants Participant[]
+}
+
+model Participant {
+  challengeId   String
+  challenge     Challenge    @relation(fields: [challengeId], references: [challengeId])
+  userId        String
+  user          User         @relation(fields: [userId], references: [userId])
+  joined_at     DateTime     @default(now())
+  completed_at  DateTime?
+  invite_status InviteStatus
+  evidence_link String?
+
+  @@id([challengeId, userId])
 }
