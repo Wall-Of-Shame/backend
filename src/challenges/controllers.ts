@@ -21,6 +21,7 @@ import {
   handleUnauthRequest,
 } from "../common/utils/errors";
 import prisma from "../prisma";
+import { isUserInitiated } from "../users/utils";
 import { createChallenge } from "./queries";
 import { isChallengeOver, isChallengeRunning, isStartBeforeEnd } from "./utils";
 import { Prisma } from ".prisma/client";
@@ -32,9 +33,64 @@ export async function create(
   try {
     const { userId } = response.locals.payload;
 
-    const { title, description, endAt, type, participants } = request.body;
+    const {
+      title,
+      description,
+      endAt,
+      type,
+      participants: reqParticipants,
+    } = request.body;
 
-    const participantsMinusOwner = participants.filter((p) => p !== userId);
+    const owner = await prisma.user.findFirst({
+      where: {
+        userId,
+      },
+    });
+    if (!owner) {
+      handleUnauthRequest(response);
+      return;
+    }
+
+    // ensure not initiated users cannot be added as participants
+    const { username, name, avatar_bg, avatar_animal, avatar_color } = owner;
+    if (
+      !isUserInitiated({
+        username,
+        name,
+        avatarAnimal: avatar_animal,
+        avatarBg: avatar_bg,
+        avatarColor: avatar_color,
+      })
+    ) {
+      handleKnownError(
+        request,
+        response,
+        new CustomError(
+          ErrorCode.USER_NOT_INIT,
+          "User is not properly initiated"
+        )
+      );
+      return;
+    }
+
+    const participants = await prisma.user.findMany({
+      where: {
+        userId: {
+          in: reqParticipants,
+          not: userId,
+        },
+        // ensure not initiated users cannot be added as participants
+        username: { not: null },
+        name: { not: null },
+        avatar_animal: { not: null },
+        avatar_color: { not: null },
+        avatar_bg: { not: null },
+      },
+      select: {
+        userId: true,
+      },
+    });
+
     const currentDate = new Date();
     const { challengeId } = await createChallenge({
       data: {
@@ -42,16 +98,13 @@ export async function create(
         description,
         endAt: parseJSON(endAt),
         type,
-        ownerId: userId,
+        ownerId: owner.userId,
         participants: {
           createMany: {
             data: [
-              ...participantsMinusOwner.map((pId) => ({
-                userId: pId,
-                joined_at: currentDate,
-              })),
+              ...participants,
               {
-                userId: userId,
+                userId: owner.userId,
                 joined_at: currentDate,
               },
             ],
@@ -128,8 +181,12 @@ export async function index(
         continue;
       }
 
-      const { challenge } = participantOf;
-
+      // allow to do this cause of typing issue of participantOf.challenge
+      // by right should check how to type this properly outside
+      // allow for !. in this block => assume that username, name, avatars are all present
+      // see  `POST challenges/`, `PATCH challenges/:challengeId`, `POST challenges/accept`,
+      // these are the endpoints that insert rows into participants, and they check for these fields to exist
+      /* eslint-disable @typescript-eslint/no-non-null-assertion,no-inner-declarations */
       function formatChallenge(
         rawChallenge: typeof participantOf.challenge
       ): ChallengeData {
@@ -149,9 +206,6 @@ export async function index(
 
         // for this challenge, organise it into accepted and pending users
         for (const participant of participants) {
-          // allow for !. here => assume that username, name, avatars are all present
-          // see  `POST challenges/`, `PATCH challenges/:challengeId`, `POST challenges/accept`,
-          // these are the endpoints that insert rows into participants, and they check for these fields to exist
           const {
             userId,
             username,
@@ -221,6 +275,7 @@ export async function index(
         ongoing,
         pending,
       });
+      /* eslint-enable @typescript-eslint/no-non-null-assertion,no-inner-declarations */
       return;
     }
   } catch (e) {
@@ -396,8 +451,14 @@ export async function update(
     }
 
     try {
-      const { title, description, startAt, endAt, type, participants } =
-        request.body;
+      const {
+        title,
+        description,
+        startAt,
+        endAt,
+        type,
+        participants: reqParticipants,
+      } = request.body;
 
       const startAtDate: Date | null = startAt
         ? parseJSON(startAt)
@@ -427,22 +488,36 @@ export async function update(
           type: type ?? challenge.type,
         },
       };
-      if (participants) {
+      if (reqParticipants) {
+        const participants = await prisma.user.findMany({
+          where: {
+            userId: {
+              in: reqParticipants,
+              not: userId,
+            },
+            // ensure not initiated users cannot be added as participants
+            username: { not: null },
+            name: { not: null },
+            avatar_animal: { not: null },
+            avatar_color: { not: null },
+            avatar_bg: { not: null },
+          },
+          select: {
+            userId: true,
+          },
+        });
         args.data["participants"] = {
           // new participant: exists in the input list, but not in the existing list
           createMany: {
-            data: participants
-              .filter(
-                (inputId) =>
-                  !challenge.participants.includes({ userId: inputId })
-              )
-              .map((pid) => ({ userId: pid })),
+            data: participants.filter(
+              (p) => !challenge.participants.find((e) => e.userId === p.userId)
+            ),
           },
           // removed participant: exists in the existing list, not in the input list
-          // do not delete owner as participant
-          deleteMany: challenge.participants
-            .filter((existing) => !participants.includes(existing.userId))
-            .filter((existing) => existing.userId !== challenge.ownerId),
+          // do not delete owner as participant => handled by above query
+          deleteMany: challenge.participants.filter(
+            (e) => !participants.find((p) => p.userId === e.userId)
+          ),
         };
       }
 
@@ -552,6 +627,37 @@ export async function acceptChallenge(
         request,
         response,
         new CustomError(ErrorCode.CHALLENGE_OVER, "Challenge is over.")
+      );
+      return;
+    }
+
+    const user = await prisma.user.findUnique({
+      where: {
+        userId,
+      },
+    });
+    if (!user) {
+      handleNotFoundError(response, "User was not found.");
+      return;
+    }
+    // ensure not initiated users cannot be added as participants
+    const { username, name, avatar_bg, avatar_animal, avatar_color } = user;
+    if (
+      !isUserInitiated({
+        username,
+        name,
+        avatarAnimal: avatar_animal,
+        avatarBg: avatar_bg,
+        avatarColor: avatar_color,
+      })
+    ) {
+      handleKnownError(
+        request,
+        response,
+        new CustomError(
+          ErrorCode.USER_NOT_INIT,
+          "User is not properly initiated"
+        )
       );
       return;
     }
