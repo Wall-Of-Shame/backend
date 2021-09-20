@@ -75,6 +75,9 @@ export async function create(
   }
 }
 
+// show challenge.
+// no check for user - since the id is uuid, hard to forge a random challengeId unless you are sent one
+// no check also because user may want to see it before accepting
 export async function show(
   request: Request<ChallengeId, any, any, any>,
   response: Response<ChallengeData, Payload>
@@ -192,6 +195,8 @@ export async function show(
   }
 }
 
+// update challenge
+// only allow owner to update challenge
 export async function update(
   request: Request<ChallengeId, any, ChallengePatch, any>,
   response: Response<any, Payload>
@@ -302,6 +307,8 @@ export async function update(
   }
 }
 
+// remove challenge
+// only allow owner to remove challenge
 export async function remove(
   request: Request<ChallengeId, any, any, any>,
   response: Response<any, Payload>
@@ -363,6 +370,8 @@ export async function remove(
   }
 }
 
+// accept challenge
+// creates underlying participant instance if (1) already added or (2) user got hold of challengeId
 export async function acceptChallenge(
   request: Request<ChallengeId, any, any, any>,
   response: Response<any, Payload>
@@ -439,6 +448,9 @@ export async function acceptChallenge(
   }
 }
 
+// reject challenge
+// tries to delete challenge if the user is (1) invited or (2) has prev accepted
+// if not met, just fails gracefully and return 200
 export async function rejectChallenge(
   request: Request<ChallengeId, any, any, any>,
   response: Response<any, Payload>
@@ -491,6 +503,8 @@ export async function rejectChallenge(
   }
 }
 
+// complete challenge
+// completes challenge if the user has accepted ^ challenge has started
 export async function completeChallenge(
   request: Request<ChallengeId, any, any, any>,
   response: Response<any, Payload>
@@ -508,11 +522,31 @@ export async function completeChallenge(
       return;
     }
 
-    const challenge = await prisma.challenge.findUnique({
-      where: { challengeId },
-      select: { challengeId: true, startAt: true, endAt: true },
+    const participant = await prisma.participant.findFirst({
+      where: {
+        challengeId,
+        userId,
+      },
+      include: {
+        challenge: {
+          select: {
+            challengeId: true,
+            startAt: true,
+            endAt: true,
+          },
+        },
+      },
     });
-    if (!challenge || !isChallengeRunning(challenge.startAt, challenge.endAt)) {
+    if (!participant || participant.invited_at === null) {
+      handleNotFoundError(response, "User has not accepted this challenge.");
+      return;
+    }
+    if (
+      !isChallengeRunning(
+        participant.challenge.startAt,
+        participant.challenge.endAt
+      )
+    ) {
       handleKnownError(
         request,
         response,
