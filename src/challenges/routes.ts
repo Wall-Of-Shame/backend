@@ -6,6 +6,7 @@ import {
   completeChallenge,
   create,
   rejectChallenge,
+  remove,
   show,
 } from "./controllers";
 
@@ -23,6 +24,6 @@ router.get("");
 
 router.patch("/:challengeId");
 
-router.delete("/:challengeId");
+router.delete("/:challengeId", remove);
 
 export default router;
