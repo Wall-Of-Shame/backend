@@ -90,10 +90,10 @@ export async function patchUser(
       },
     };
 
-    if (deadlineReminder) {
+    if (deadlineReminder !== undefined) {
       args.data["cfg_deadline_reminder"] = deadlineReminder;
     }
-    if (invitations) {
+    if (invitations !== undefined) {
       args.data["cfg_invites_notif"] = invitations;
     }
     await prisma.user.update(args);
