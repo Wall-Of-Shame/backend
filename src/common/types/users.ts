@@ -52,6 +52,6 @@ export interface UserPatch {
 // Private interfaces
 interface Avatar {
   animal: "CAT" | "DOG" | "RABBIT";
-  color: "BROWN";
+  color: "PRIMARY" | "SECONDARY" | "TERTIARY";
   background: string;
 }

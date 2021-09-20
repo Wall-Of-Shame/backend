@@ -17,7 +17,9 @@ enum AvatarAnimal {
 }
 
 enum AvatarColor {
-  BROWN
+  PRIMARY
+  SECONDARY
+  TERTIARY
 }
 
 enum ChallengeType {
