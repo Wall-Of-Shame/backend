@@ -39,6 +39,8 @@ model User {
   avatar_bg             String?
   owner_of              Challenge[]
   participating_in      Participant[]
+  contacts_pers1        Contact[]     @relation("contacts_pers1")
+  contacts_pers2        Contact[]     @relation("contacts_pers2")
 }
 
 model Challenge {
@@ -64,4 +66,13 @@ model Participant {
   evidence_link String?
 
   @@id([challengeId, userId])
+}
+
+model Contact {
+  pers1_id String
+  pers1    User   @relation("contacts_pers1", fields: [pers1_id], references: [userId])
+  pers2_id String
+  pers2    User   @relation("contacts_pers2", fields: [pers2_id], references: [userId])
+
+  @@id([pers1_id, pers2_id])
 }
