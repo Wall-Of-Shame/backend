@@ -38,6 +38,16 @@ export interface ChallengeList {
   history: ChallengeMini[];
 }
 
+// Input schema for the `PATCH /challenges/:challengeId` route
+export interface ChallengePatch {
+  title?: string;
+  description?: string;
+  startAt?: string;
+  endAt?: string;
+  type?: ChallengeType;
+  participants?: string[];
+}
+
 // Internal type. They do not match to any route specifically, but rather used to construct them.
 export type UserMini = Pick<
   UserList,

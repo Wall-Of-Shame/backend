@@ -14,7 +14,10 @@ export function isChallengeOver(end: Date): boolean {
 }
 
 // checks if challenge start is before its end
-export function startBeforeEnd(start: Date, end: Date): boolean {
+export function isStartBeforeEnd(start: Date | null, end: Date): boolean {
+  if (!start) {
+    return true;
+  }
   return isBefore(start, end);
 }
 

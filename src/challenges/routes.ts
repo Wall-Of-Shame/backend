@@ -8,6 +8,7 @@ import {
   rejectChallenge,
   remove,
   show,
+  update,
 } from "./controllers";
 
 const router = Router();
@@ -22,7 +23,7 @@ router.post("", create);
 router.get("/:challengeId", show);
 router.get("");
 
-router.patch("/:challengeId");
+router.patch("/:challengeId", update);
 
 router.delete("/:challengeId", remove);
 

@@ -8,6 +8,7 @@ import { ErrorCode } from "../common/types";
 import {
   ChallengeData,
   ChallengeId,
+  ChallengePatch,
   ChallengePost,
   UserMini,
 } from "../common/types/challenges";
@@ -20,7 +21,8 @@ import {
 } from "../common/utils/errors";
 import prisma from "../prisma";
 import { createChallenge } from "./queries";
-import { isChallengeOver, isChallengeRunning } from "./utils";
+import { isChallengeOver, isChallengeRunning, isStartBeforeEnd } from "./utils";
+import { Prisma } from ".prisma/client";
 
 export async function create(
   request: Request<any, any, ChallengePost, any>,
@@ -183,6 +185,116 @@ export async function show(
       },
     });
     return;
+  } catch (e) {
+    console.log(e);
+    handleServerError(request, response);
+    return;
+  }
+}
+
+export async function update(
+  request: Request<ChallengeId, any, ChallengePatch, any>,
+  response: Response<any, Payload>
+): Promise<void> {
+  try {
+    const { userId } = response.locals.payload;
+    const { challengeId } = request.params;
+
+    if (!userId) {
+      handleInvalidCredentialsError(request, response);
+      return;
+    }
+    if (!challengeId) {
+      handleServerError(request, response);
+      return;
+    }
+
+    const challenge = await prisma.challenge.findUnique({
+      where: { challengeId },
+      include: {
+        participants: {
+          select: {
+            userId: true,
+          },
+        },
+      },
+    });
+    if (!challenge) {
+      handleNotFoundError(response, "Challenge was not found.");
+      return;
+    }
+    if (isChallengeOver(challenge.endAt)) {
+      handleKnownError(
+        request,
+        response,
+        new CustomError(ErrorCode.CHALLENGE_OVER, "Challenge is over.")
+      );
+      return;
+    }
+    if (challenge.ownerId !== userId) {
+      handleUnauthRequest(response);
+      return;
+    }
+
+    try {
+      const { title, description, startAt, endAt, type, participants } =
+        request.body;
+
+      const startAtDate: Date | null = startAt
+        ? parseJSON(startAt)
+        : challenge.startAt;
+      const endAtDate: Date | null = endAt ? parseJSON(endAt) : challenge.endAt;
+      if (!isStartBeforeEnd(startAtDate, endAtDate)) {
+        handleKnownError(
+          request,
+          response,
+          new CustomError(
+            ErrorCode.INVALID_REQUEST,
+            "Start has to be before end."
+          )
+        );
+        return;
+      }
+
+      const args: Prisma.ChallengeUpdateArgs = {
+        where: {
+          challengeId,
+        },
+        data: {
+          title: title ?? challenge.title,
+          description: description ?? challenge.description,
+          startAt: startAtDate,
+          endAt: endAtDate,
+          type: type ?? challenge.type,
+        },
+      };
+      if (participants) {
+        args.data["participants"] = {
+          // new participant: exists in the input list, but not in the existing list
+          createMany: {
+            data: participants
+              .filter(
+                (inputId) =>
+                  !challenge.participants.includes({ userId: inputId })
+              )
+              .map((pid) => ({ userId: pid })),
+          },
+          // removed participant: exists in the existing list, not in the input list
+          // do not delete owner as participant
+          deleteMany: challenge.participants
+            .filter((existing) => !participants.includes(existing.userId))
+            .filter((existing) => existing.userId !== challenge.ownerId),
+        };
+      }
+
+      await prisma.challenge.update(args);
+      response.status(200).send({});
+      return;
+    } catch (e) {
+      console.log(e);
+      handleServerError(request, response);
+      return;
+    }
   } catch (e) {
     console.log(e);
     handleServerError(request, response);
