@@ -240,6 +240,7 @@ export async function index(
         }
 
         // format the challenge
+        /* eslint-enable @typescript-eslint/no-non-null-assertion,no-inner-declarations */
         return {
           challengeId,
           title,
@@ -270,14 +271,13 @@ export async function index(
       } else {
         pending.push(formatChallenge(participantOf.challenge));
       }
-
-      response.status(200).send({
-        ongoing,
-        pending,
-      });
-      /* eslint-enable @typescript-eslint/no-non-null-assertion,no-inner-declarations */
-      return;
     }
+    response.status(200).send({
+      ongoing,
+      pending,
+    });
+
+    return;
   } catch (e) {
     handleServerError(request, response);
     return;
