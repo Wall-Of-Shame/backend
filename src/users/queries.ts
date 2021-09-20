@@ -1,4 +1,4 @@
-import { PrismaClient, User } from "@prisma/client";
+import { Prisma, PrismaClient, User } from "@prisma/client";
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime";
 
 import { ErrorCode, UserPatch } from "../common/types";
@@ -69,11 +69,12 @@ export async function patchUser(
   userId: string,
   data: UserPatch
 ): Promise<void> {
-  const { name, username, avatar } = data;
+  const { name, username, avatar, settings } = data;
   const { animal, color, background } = avatar;
+  const { deadlineReminder, invitations } = settings;
 
   try {
-    await prisma.user.update({
+    const args: Prisma.UserUpdateArgs = {
       where: {
         userId,
       },
@@ -87,7 +88,15 @@ export async function patchUser(
       select: {
         userId: true,
       },
-    });
+    };
+
+    if (deadlineReminder) {
+      args.data["cfg_deadline_reminder"] = deadlineReminder;
+    }
+    if (invitations) {
+      args.data["cfg_invites_notif"] = invitations;
+    }
+    await prisma.user.update(args);
     return;
   } catch (e) {
     const error: PrismaClientKnownRequestError = e as any;
