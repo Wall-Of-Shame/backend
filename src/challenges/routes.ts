@@ -5,6 +5,7 @@ import {
   acceptChallenge,
   completeChallenge,
   create,
+  index,
   rejectChallenge,
   remove,
   show,
@@ -21,7 +22,7 @@ router.post("/:challengeId/proofs");
 router.post("", create);
 
 router.get("/:challengeId", show);
-router.get("");
+router.get("", index);
 
 router.patch("/:challengeId", update);
 
