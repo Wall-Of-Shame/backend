@@ -8,6 +8,7 @@ import { ErrorCode } from "../common/types";
 import {
   ChallengeData,
   ChallengeId,
+  ChallengeList,
   ChallengePatch,
   ChallengePost,
   UserMini,
@@ -75,8 +76,161 @@ export async function create(
   }
 }
 
+export async function index(
+  request: Request<any, any, any, any>,
+  response: Response<ChallengeList, Payload>
+): Promise<void> {
+  try {
+    const { userId } = response.locals.payload;
+
+    const particingInstances = await prisma.participant.findMany({
+      where: {
+        userId,
+      },
+      include: {
+        challenge: {
+          include: {
+            owner: {
+              select: {
+                userId: true,
+                username: true,
+                name: true,
+                avatar_animal: true,
+                avatar_color: true,
+                avatar_bg: true,
+              },
+            },
+            participants: {
+              include: {
+                user: {
+                  select: {
+                    userId: true,
+                    username: true,
+                    name: true,
+                    avatar_animal: true,
+                    avatar_color: true,
+                    avatar_bg: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    const ongoing: ChallengeData[] = [];
+    const pending: ChallengeData[] = [];
+
+    for (const participantOf of particingInstances) {
+      if (isChallengeOver(participantOf.challenge.endAt)) {
+        // these form the history
+        continue;
+      }
+
+      const { challenge } = participantOf;
+
+      function formatChallenge(
+        rawChallenge: typeof participantOf.challenge
+      ): ChallengeData {
+        const {
+          challengeId,
+          title,
+          description,
+          startAt,
+          endAt,
+          type,
+          owner,
+          participants,
+        } = rawChallenge;
+
+        const accepted: UserMini[] = [];
+        const pending: UserMini[] = [];
+
+        // for this challenge, organise it into accepted and pending users
+        for (const participant of participants) {
+          // allow for !. here => assume that username, name, avatars are all present
+          // see  `POST challenges/`, `PATCH challenges/:challengeId`, `POST challenges/accept`,
+          // these are the endpoints that insert rows into participants, and they check for these fields to exist
+          const {
+            userId,
+            username,
+            name,
+            avatar_animal,
+            avatar_bg,
+            avatar_color,
+          } = participant.user;
+          if (participant.invited_at === null) {
+            pending.push({
+              userId: userId,
+              username: username!,
+              name: name!,
+              avatar: {
+                animal: avatar_animal!,
+                background: avatar_bg!,
+                color: avatar_color!,
+              },
+            });
+          } else {
+            accepted.push({
+              userId: userId,
+              username: username!,
+              name: name!,
+              avatar: {
+                animal: avatar_animal!,
+                background: avatar_bg!,
+                color: avatar_color!,
+              },
+            });
+          }
+        }
+
+        // format the challenge
+        return {
+          challengeId,
+          title,
+          description: description ?? undefined,
+          startAt: startAt ? startAt.toISOString() : null,
+          endAt: endAt.toISOString(),
+          type: type,
+          owner: {
+            userId: owner.userId,
+            username: owner.username!,
+            name: owner.name!,
+            avatar: {
+              animal: owner.avatar_animal!,
+              background: owner.avatar_bg!,
+              color: owner.avatar_color!,
+            },
+          },
+          participantCount: accepted.length,
+          participants: {
+            accepted,
+            pending,
+          },
+        };
+      }
+
+      if (participantOf.invited_at !== null) {
+        ongoing.push(formatChallenge(participantOf.challenge));
+      } else {
+        pending.push(formatChallenge(participantOf.challenge));
+      }
+
+      response.status(200).send({
+        ongoing,
+        pending,
+      });
+      return;
+    }
+  } catch (e) {
+    handleServerError(request, response);
+    return;
+  }
+}
+
 // show challenge.
-// no check for user - since the id is uuid, hard to forge a random challengeId unless you are sent one
+// no user-specific check since the challengeId is uuid, hard to forge a random challengeId unless you are sent one
 // no check also because user may want to see it before accepting
 export async function show(
   request: Request<ChallengeId, any, any, any>,
@@ -171,7 +325,7 @@ export async function show(
       startAt: startAt ? startAt.toISOString() : null,
       endAt: endAt.toISOString(),
       type,
-      participantCount: participants.length,
+      participantCount: accepted.length,
       owner: {
         userId: userId,
         username: username ?? undefined,

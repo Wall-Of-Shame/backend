@@ -33,9 +33,8 @@ export interface ChallengeData {
 
 // Return schema for the `GET /challenges` route
 export interface ChallengeList {
-  ongoing: ChallengeMini[];
-  pending: ChallengeMini[];
-  history: ChallengeMini[];
+  ongoing: ChallengeData[];
+  pending: ChallengeData[];
 }
 
 // Input schema for the `PATCH /challenges/:challengeId` route
@@ -53,19 +52,6 @@ export type UserMini = Pick<
   UserList,
   "userId" | "username" | "name" | "avatar"
 >;
-
-type ChallengeMini = Pick<
-  ChallengeData,
-  | "challengeId"
-  | "title"
-  | "description"
-  | "startAt"
-  | "endAt"
-  | "participantCount"
-  | "type"
-  | "owner"
->;
-
 // Deep partial of UserMini
 // This is to support the corner case of user being able to create a challenge without having a username/name/avatar
 // They should be prompted to add one asap
