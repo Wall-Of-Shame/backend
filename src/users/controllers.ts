@@ -3,9 +3,34 @@ import { Request, Response } from "express";
 
 import { challengeCount } from "../challenges/queries";
 import { Payload } from "../common/middlewares/checkToken";
-import { UserPatch, UserData } from "../common/types";
+import { UserPatch, UserData, ErrorCode } from "../common/types";
+import { UserFriends } from "../common/types/users";
 import { handleServerError, handleUnauthRequest } from "../common/utils/errors";
 import { getUser, patchUser } from "./queries";
+import { getUserRecents } from "./services";
+
+export async function indexFriends(
+  request: Request<any, any, any, any>,
+  response: Response<UserFriends[], Payload>
+): Promise<void> {
+  try {
+    const { userId } = response.locals.payload;
+    const recents: UserFriends[] = await getUserRecents(userId);
+    response.status(200).send(recents);
+    return;
+  } catch (e) {
+    console.log(e);
+    const knownError: Error = e as any;
+    switch (knownError.name) {
+      case ErrorCode.UNAUTHORIZED:
+        handleUnauthRequest(response);
+        return;
+      default:
+        handleServerError(request, response);
+        return;
+    }
+  }
+}
 
 export async function show(
   request: Request<any, any, any, any>,

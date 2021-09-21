@@ -28,13 +28,18 @@ export interface UserData {
   };
 }
 
+// Input schema for query strings in `GET users/?operation=<operation>` routes.
+export interface UserListQuery {
+  operation: "wallGlobal" | "wallRecents";
+  query?: string; // has to be present if "recents" is present
+}
+
 // Partial return schema for the `GET /self/friends` route.
 // Full response is Array<UserFriends>
 export interface UserFriends {
   userId: string;
   name: string;
   username: string;
-  befriendedAt: string;
   avatar: Avatar;
 }
 

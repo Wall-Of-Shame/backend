@@ -6,6 +6,7 @@
 // => accept: X ended. Allow for after start, then joined.
 // => reject: need. Should it be after it started, then no rejecting? or after it has ended, no reject
 // => complete: has to be running
+import { Participant } from "@prisma/client";
 import { isBefore } from "date-fns";
 
 // checks if the challenge is over
@@ -29,4 +30,27 @@ export function isChallengeRunning(start: Date | null, end: Date): boolean {
   }
   const now = new Date();
   return isBefore(start, now) && isBefore(now, end);
+}
+
+// In: list of valid participation instances
+// Out: Count
+export function getParticipationStats(
+  participantInstances: (Participant & {
+    challenge: {
+      challengeId: string;
+    };
+  })[]
+): { completedChallengeCount: number; failedChallengeCount: number } {
+  let completedChallengeCount = 0;
+  let failedChallengeCount = 0;
+
+  for (const p of participantInstances) {
+    if (p.completed_at) {
+      completedChallengeCount++;
+    } else {
+      failedChallengeCount++;
+    }
+  }
+
+  return { completedChallengeCount, failedChallengeCount };
 }
