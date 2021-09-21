@@ -9,8 +9,11 @@ users.get("");
 
 export const self = Router();
 
-self.get("/friends", indexFriends);
 self.use(checkValidToken);
 self.get("", show);
-
 self.patch("", update);
+
+export const friends = Router();
+
+friends.use(checkValidToken);
+friends.get("", indexFriends);
