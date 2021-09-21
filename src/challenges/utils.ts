@@ -32,6 +32,17 @@ export function isChallengeRunning(start: Date | null, end: Date): boolean {
   return isBefore(start, now) && isBefore(now, end);
 }
 
+export function hasUserAccepted(joinedDate: Date | null): boolean {
+  return joinedDate !== null;
+}
+
+export function hasChallengeStarted(start: Date | null): boolean {
+  if (!start) {
+    return false;
+  }
+  return isBefore(start, new Date());
+}
+
 // In: list of valid participation instances
 // Out: Count
 export function getParticipationStats(participantInstances: Participant[]): {

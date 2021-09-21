@@ -12,6 +12,7 @@ export type ChallengeType = "LAST_TO_COMPLETE" | "NOT_COMPLETED";
 export interface ChallengePost {
   title: string;
   description?: string;
+  startAt: string;
   endAt: string;
   type: ChallengeType;
   participants: string[];

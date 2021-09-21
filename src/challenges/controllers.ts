@@ -22,7 +22,13 @@ import {
 } from "../common/utils/errors";
 import prisma from "../prisma";
 import { isUserInitiated } from "../users/utils";
-import { isChallengeOver, isChallengeRunning, isStartBeforeEnd } from "./utils";
+import {
+  hasChallengeStarted,
+  hasUserAccepted,
+  isChallengeOver,
+  isChallengeRunning,
+  isStartBeforeEnd,
+} from "./utils";
 import { Prisma } from ".prisma/client";
 
 export async function create(
@@ -35,10 +41,24 @@ export async function create(
     const {
       title,
       description,
+      startAt,
       endAt,
       type,
       participants: reqParticipants,
     } = request.body;
+
+    // simple validation
+    if (!isStartBeforeEnd(parseJSON(startAt), parseJSON(endAt))) {
+      handleKnownError(
+        request,
+        response,
+        new CustomError(
+          ErrorCode.INVALID_REQUEST,
+          "startAt is not before endAt."
+        )
+      );
+      return;
+    }
 
     // get owner + recents
     const owner = await prisma.user.findFirst({
@@ -105,6 +125,7 @@ export async function create(
         data: {
           title,
           description,
+          startAt: parseJSON(endAt),
           endAt: parseJSON(endAt),
           type,
           ownerId: owner.userId,
@@ -150,7 +171,7 @@ export async function index(
   try {
     const { userId } = response.locals.payload;
 
-    const particingInstances = await prisma.participant.findMany({
+    const participatingInstances = await prisma.participant.findMany({
       where: {
         userId,
       },
@@ -191,7 +212,7 @@ export async function index(
     const pendingResponse: ChallengeData[] = [];
 
     /* eslint-disable @typescript-eslint/no-non-null-assertion,no-inner-declarations */
-    for (const participantOf of particingInstances) {
+    for (const participantOf of participatingInstances) {
       if (isChallengeOver(participantOf.challenge.endAt)) {
         // these form the history
         continue;
@@ -282,20 +303,20 @@ export async function index(
 
       const c: ChallengeData = formatChallenge(participantOf.challenge);
       if (
-        participantOf.joined_at !== null &&
-        participantOf.challenge.startAt !== null
+        hasUserAccepted(participantOf.joined_at) &&
+        hasChallengeStarted(participantOf.challenge.startAt)
       ) {
         // ongoing: user accepted + challenge has started
         ongoing.push(c);
       } else if (
-        participantOf.challenge.startAt === null &&
-        participantOf.joined_at
+        hasUserAccepted(participantOf.joined_at) &&
+        !hasChallengeStarted(participantOf.challenge.startAt)
       ) {
         // pendingStart: user accepted + challenge not started
         pendingStart.push(c);
       } else if (
-        participantOf.challenge.startAt === null &&
-        participantOf.joined_at === null
+        !hasUserAccepted(participantOf.joined_at) &&
+        !hasChallengeStarted(participantOf.challenge.startAt)
       ) {
         // pendingResponse: user has not accepted + challenge not started
         pendingResponse.push(c);
@@ -397,7 +418,7 @@ export async function show(
         },
       };
 
-      if (participant.joined_at) {
+      if (hasUserAccepted(participant.joined_at)) {
         accepted.push(formattedUser);
       } else {
         pending.push(formattedUser);
@@ -461,7 +482,7 @@ export async function update(
           include: {
             // befriender
             contacts_pers1: {
-              select: { pers2_id: true }, // befrieedee
+              select: { pers2_id: true }, // befriendee
             },
           },
         },
@@ -681,13 +702,25 @@ export async function acceptChallenge(
 
     const challenge = await prisma.challenge.findUnique({
       where: { challengeId },
-      select: { challengeId: true, endAt: true, ownerId: true },
+      select: { challengeId: true, startAt: true, endAt: true, ownerId: true },
     });
-    if (!challenge || isChallengeOver(challenge.endAt)) {
+    if (!challenge) {
+      handleNotFoundError(response, "Challenge was not found.");
+      return;
+    }
+    if (isChallengeOver(challenge.endAt)) {
       handleKnownError(
         request,
         response,
         new CustomError(ErrorCode.CHALLENGE_OVER, "Challenge is over.")
+      );
+      return;
+    }
+    if (hasChallengeStarted(challenge.startAt)) {
+      handleKnownError(
+        request,
+        response,
+        new CustomError(ErrorCode.CHALLENGE_STARTED, "Challenge has started.")
       );
       return;
     }
@@ -807,13 +840,25 @@ export async function rejectChallenge(
 
     const challenge = await prisma.challenge.findUnique({
       where: { challengeId },
-      select: { challengeId: true, endAt: true },
+      select: { challengeId: true, startAt: true, endAt: true },
     });
-    if (!challenge || isChallengeOver(challenge.endAt)) {
+    if (!challenge) {
+      handleNotFoundError(response, "Challenge was not found.");
+      return;
+    }
+    if (isChallengeOver(challenge.endAt)) {
       handleKnownError(
         request,
         response,
         new CustomError(ErrorCode.CHALLENGE_OVER, "Challenge is over.")
+      );
+      return;
+    }
+    if (hasChallengeStarted(challenge.startAt)) {
+      handleKnownError(
+        request,
+        response,
+        new CustomError(ErrorCode.CHALLENGE_STARTED, "Challenge has started.")
       );
       return;
     }
@@ -874,23 +919,15 @@ export async function completeChallenge(
         },
       },
     });
-    if (!participant || participant.invited_at === null) {
+    if (!participant) {
       handleNotFoundError(response, "User has not accepted this challenge.");
       return;
     }
-    if (
-      !isChallengeRunning(
-        participant.challenge.startAt,
-        participant.challenge.endAt
-      )
-    ) {
+    if (isChallengeOver(participant.challenge.endAt)) {
       handleKnownError(
         request,
         response,
-        new CustomError(
-          ErrorCode.CHALLENGE_NOT_RUNNING,
-          "Challenge is not running."
-        )
+        new CustomError(ErrorCode.CHALLENGE_OVER, "Challenge is over.")
       );
       return;
     }
