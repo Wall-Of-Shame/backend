@@ -45,9 +45,8 @@
     "build": "tsc --build",
     "clean": "tsc --build --clean",
     "tsc": "tsc --noEmit",
-    "lint": "prettier --write --config .prettierrc . && eslint . --ext .ts"
-  },
-  "engines": {
-    "node": "14.17.3"
+    "lint": "prettier --write --config .prettierrc . && eslint . --ext .ts",
+    "postinstall": "npm run build",
+    "start:heroku": "node build/index.js"
   }
 }
