@@ -1,6 +1,8 @@
+import { ParamsDictionary } from "express-serve-static-core";
+
 import { UserList } from "./users";
 
-export interface ChallengeId {
+export interface ChallengeId extends ParamsDictionary {
   challengeId: string;
 }
 

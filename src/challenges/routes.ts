@@ -1,5 +1,6 @@
 import { Router } from "express";
 
+import uploader from "../cloudinary";
 import { checkValidToken } from "../common/middlewares/checkToken";
 import {
   acceptChallenge,
@@ -9,6 +10,7 @@ import {
   rejectChallenge,
   remove,
   show,
+  submitProof,
   update,
 } from "./controllers";
 
@@ -18,7 +20,7 @@ router.use(checkValidToken);
 router.post("/:challengeId/accept", acceptChallenge);
 router.post("/:challengeId/reject", rejectChallenge);
 router.post("/:challengeId/complete", completeChallenge);
-router.post("/:challengeId/proofs");
+router.post("/:challengeId/proofs", uploader.single("proof"), submitProof);
 router.post("", create);
 
 router.get("/:challengeId", show);

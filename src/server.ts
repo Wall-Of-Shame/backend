@@ -1,11 +1,14 @@
 import { PrismaClient } from "@prisma/client";
+import { v2 as cloudinary } from "cloudinary";
 import cors, { CorsOptions } from "cors";
 import express from "express";
 import admin from "firebase-admin";
 import helmet from "helmet";
 import { Server } from "http";
 import morgan from "morgan";
+import { Multer } from "multer";
 
+import uploader from "./cloudinary";
 import prisma from "./prisma";
 import routes from "./routes";
 
@@ -16,21 +19,40 @@ const corsOptions: CorsOptions = {
 };
 
 function verifyEnvOrReject(): void {
-  const { FIREBASE_DB_URL, GOOGLE_APPLICATION_CREDENTIALS, JWT_SECRET } =
-    process.env;
+  const {
+    GOOGLE_APPLICATION_CREDENTIALS,
+    JWT_SECRET,
+    CLOUDINARY_NAME,
+    CLOUDINARY_KEY,
+    CLOUDINARY_SECRET,
+  } = process.env;
 
-  if (!FIREBASE_DB_URL || !GOOGLE_APPLICATION_CREDENTIALS || !JWT_SECRET) {
+  if (
+    !GOOGLE_APPLICATION_CREDENTIALS ||
+    !JWT_SECRET ||
+    !CLOUDINARY_NAME ||
+    !CLOUDINARY_KEY ||
+    !CLOUDINARY_SECRET
+  ) {
     throw new Error("Environment was not configured properly.");
   }
 }
 export class ApiServer {
   server: Server | undefined;
   prisma: PrismaClient | undefined;
+  uploader: Multer | undefined;
 
   async initialize(port = 3001): Promise<void> {
     verifyEnvOrReject();
 
     this.prisma = prisma;
+
+    cloudinary.config({
+      cloud_name: process.env.CLOUDINARY_NAME,
+      api_key: process.env.CLOUDINARY_KEY,
+      api_secret: process.env.CLOUDINARY_SECRET,
+    });
+    this.uploader = uploader;
 
     const app = express();
     app.use(express.json({ limit: "20mb" }));
@@ -42,7 +64,6 @@ export class ApiServer {
 
     admin.initializeApp({
       credential: admin.credential.applicationDefault(),
-      databaseURL: `https://${process.env.FIREBASE_DB_URL}.firebaseio.com`,
     });
 
     const message =
