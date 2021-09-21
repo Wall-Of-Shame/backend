@@ -1,4 +1,7 @@
-import { getParticipationStats } from "../challenges/utils";
+import {
+  getParticipationStats,
+  validParticipationFilter,
+} from "../challenges/utils";
 import { ErrorCode } from "../common/types";
 import { UserFriends, UserList } from "../common/types/users";
 import { CustomError } from "../common/utils/errors";
@@ -24,21 +27,7 @@ export async function getUserRecents(userId: string): Promise<UserFriends[]> {
         include: {
           // count the list of participant instances
           participating_in: {
-            where: {
-              // valid participant instance
-              // user has accepted + challenge is over
-              joined_at: { not: null },
-              challenge: {
-                endAt: { lte: new Date() },
-              },
-            },
-            include: {
-              challenge: {
-                select: {
-                  challengeId: true,
-                },
-              },
-            },
+            where: validParticipationFilter,
           },
         },
       },
@@ -94,21 +83,7 @@ export async function searchUsers(query: string): Promise<UserList[]> {
     include: {
       // count the list of participant instances
       participating_in: {
-        where: {
-          // valid participant instance
-          // user has accepted + challenge is over
-          joined_at: { not: null },
-          challenge: {
-            endAt: { lte: new Date() },
-          },
-        },
-        include: {
-          challenge: {
-            select: {
-              challengeId: true,
-            },
-          },
-        },
+        where: validParticipationFilter,
       },
     },
   });

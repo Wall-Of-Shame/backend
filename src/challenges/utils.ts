@@ -34,13 +34,10 @@ export function isChallengeRunning(start: Date | null, end: Date): boolean {
 
 // In: list of valid participation instances
 // Out: Count
-export function getParticipationStats(
-  participantInstances: (Participant & {
-    challenge: {
-      challengeId: string;
-    };
-  })[]
-): { completedChallengeCount: number; failedChallengeCount: number } {
+export function getParticipationStats(participantInstances: Participant[]): {
+  completedChallengeCount: number;
+  failedChallengeCount: number;
+} {
   let completedChallengeCount = 0;
   let failedChallengeCount = 0;
 
@@ -54,3 +51,12 @@ export function getParticipationStats(
 
   return { completedChallengeCount, failedChallengeCount };
 }
+
+// valid participant instance for counting results
+// user has accepted + challenge is over
+export const validParticipationFilter = {
+  joined_at: { not: null },
+  challenge: {
+    endAt: { lte: new Date() },
+  },
+};
