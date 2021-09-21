@@ -15,7 +15,10 @@ import routes from "./routes";
 const API_VERSION = "/api/v1";
 
 const corsOptions: CorsOptions = {
-  origin: "*",
+  origin:
+    process.env.NODE_ENV === "development"
+      ? "*"
+      : "https://wallofshame.netlify.app",
 };
 
 function verifyEnvOrReject(): void {
