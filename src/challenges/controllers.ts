@@ -238,6 +238,8 @@ export async function index(
 
         const accepted: UserMini[] = [];
         const pending: UserMini[] = [];
+        const notCompleted: UserMini[] = [];
+        const completed: UserMini[] = [];
 
         // for this challenge, organise it into accepted and pending users
         for (const participant of participants) {
@@ -261,16 +263,34 @@ export async function index(
               },
             });
           } else {
-            accepted.push({
-              userId: userId,
-              username: username!,
-              name: name!,
-              avatar: {
-                animal: avatar_animal!,
-                background: avatar_bg!,
-                color: avatar_color!,
-              },
-            });
+            // user has joined
+            if (participant.completed_at) {
+              // completed
+              completed.push({
+                userId: userId,
+                username: username!,
+                name: name!,
+                avatar: {
+                  animal: avatar_animal!,
+                  background: avatar_bg!,
+                  color: avatar_color!,
+                },
+                completedAt: participant.completed_at?.toISOString(),
+                evidenceLink: participant.evidence_link ?? undefined,
+              });
+            } else {
+              // not completed
+              notCompleted.push({
+                userId: userId,
+                username: username!,
+                name: name!,
+                avatar: {
+                  animal: avatar_animal!,
+                  background: avatar_bg!,
+                  color: avatar_color!,
+                },
+              });
+            }
           }
         }
 
@@ -294,7 +314,10 @@ export async function index(
           },
           participantCount: accepted.length,
           participants: {
-            accepted,
+            accepted: {
+              completed,
+              notCompleted,
+            },
             pending,
           },
         };
@@ -396,6 +419,8 @@ export async function show(
 
     const accepted: UserMini[] = [];
     const pending: UserMini[] = [];
+    const notCompleted: UserMini[] = [];
+    const completed: UserMini[] = [];
 
     for (const participant of participants) {
       const { username, name, userId, avatar_animal, avatar_color, avatar_bg } =
@@ -415,10 +440,16 @@ export async function show(
           color: avatar_color,
           background: avatar_bg,
         },
+        completedAt: participant.completed_at?.toISOString(),
+        evidenceLink: participant.evidence_link ?? undefined,
       };
 
       if (hasUserAccepted(participant.joined_at)) {
-        accepted.push(formattedUser);
+        if (participant.completed_at) {
+          completed.push(formattedUser);
+        } else {
+          notCompleted.push(formattedUser);
+        }
       } else {
         pending.push(formattedUser);
       }
@@ -443,7 +474,10 @@ export async function show(
         },
       },
       participants: {
-        accepted,
+        accepted: {
+          notCompleted,
+          completed,
+        },
         pending,
       },
     });
