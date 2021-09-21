@@ -1,3 +1,6 @@
+import { User } from "@prisma/client";
+import { completeChallenge } from "src/challenges/controllers";
+
 import {
   getParticipationStats,
   validParticipationFilter,
@@ -112,7 +115,43 @@ export async function searchUsers(query: string): Promise<UserList[]> {
 }
 
 export async function getGlobalWall(): Promise<UserList[]> {
-  return [];
+  // TODO: add AND failedCount > 0
+  // leaving it for testing purposes
+  const raw = await prisma.$queryRaw<
+    Array<
+      Required<User> & {
+        failedcount: number;
+        completecount: number;
+      }
+    >
+  >`
+    SELECT *
+      FROM "ParticipationStats"
+      WHERE "username" IS NOT NULL
+        AND "name" IS NOT NULL
+        AND "avatar_animal" IS NOT NULL
+        AND "avatar_color" IS NOT NULL
+        AND "avatar_bg" IS NOT NULL
+      ORDER BY failedcount DESC, username ASC
+      LIMIT 100
+  `;
+  // checked via the prisma query
+  /* eslint-disable @typescript-eslint/no-non-null-assertion*/
+  const result: UserList[] = raw.map((r) => ({
+    userId: r.userId,
+    username: r.username!,
+    name: r.name!,
+    email: r.email!,
+    avatar: {
+      animal: r.avatar_animal!,
+      color: r.avatar_color!,
+      background: r.avatar_bg!,
+    },
+    completedChallengeCount: r.completecount,
+    failedChallengeCount: r.failedcount,
+  }));
+  /* eslint-enable @typescript-eslint/no-non-null-assertion*/
+  return result;
 }
 
 export async function getUserWall(userId: string): Promise<UserList[]> {
