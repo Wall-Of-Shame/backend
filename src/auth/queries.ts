@@ -1,6 +1,6 @@
-import { PrismaClient, User } from "@prisma/client";
+import { User } from "@prisma/client";
 
-const prisma = new PrismaClient();
+import prisma from "../prisma";
 
 export async function findUser(where: {
   email?: string;

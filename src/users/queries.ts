@@ -1,10 +1,9 @@
-import { Prisma, PrismaClient, User } from "@prisma/client";
+import { Prisma, User } from "@prisma/client";
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime";
 
 import { ErrorCode, UserPatch } from "../common/types";
 import { CustomError, getMeta } from "../common/utils/errors";
-
-const prisma = new PrismaClient();
+import prisma from "../prisma";
 
 export async function createUser(data: {
   email: string;

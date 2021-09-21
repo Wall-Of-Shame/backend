@@ -26,7 +26,6 @@ import {
   hasChallengeStarted,
   hasUserAccepted,
   isChallengeOver,
-  isChallengeRunning,
   isStartBeforeEnd,
 } from "./utils";
 import { Prisma } from ".prisma/client";
