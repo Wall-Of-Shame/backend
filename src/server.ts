@@ -27,6 +27,7 @@ function verifyEnvOrReject(): void {
     FIREBASE_PROJECT_ID,
     FIREBASE_CLIENT_EMAIL,
     FIREBASE_PRIVATE_KEY,
+    DATABASE_URL,
   } = process.env;
 
   if (
@@ -36,7 +37,8 @@ function verifyEnvOrReject(): void {
     !CLOUDINARY_SECRET ||
     !FIREBASE_PROJECT_ID ||
     !FIREBASE_CLIENT_EMAIL ||
-    !FIREBASE_PRIVATE_KEY
+    !FIREBASE_PRIVATE_KEY ||
+    !DATABASE_URL
   ) {
     throw new Error("Environment was not configured properly.");
   }
