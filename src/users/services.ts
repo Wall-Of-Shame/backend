@@ -71,6 +71,71 @@ export async function getUserRecents(userId: string): Promise<UserFriends[]> {
   return recents;
 }
 
+export async function searchUsers(query: string): Promise<UserList[]> {
+  const raw = await prisma.user.findMany({
+    where: {
+      AND: [
+        { username: { not: null } },
+        { name: { not: null } },
+        { avatar_animal: { not: null } },
+        { avatar_bg: { not: null } },
+        { avatar_color: { not: null } },
+        {
+          OR: [
+            { username: { contains: query } },
+            { name: { contains: query } },
+          ],
+        },
+      ],
+    },
+    orderBy: {
+      username: "asc",
+    },
+    include: {
+      // count the list of participant instances
+      participating_in: {
+        where: {
+          // valid participant instance
+          // user has accepted + challenge is over
+          joined_at: { not: null },
+          challenge: {
+            endAt: { lte: new Date() },
+          },
+        },
+        include: {
+          challenge: {
+            select: {
+              challengeId: true,
+            },
+          },
+        },
+      },
+    },
+  });
+  const result: UserList[] = raw.map((v) => {
+    const { userId, username, name, avatar_animal, avatar_color, avatar_bg } =
+      v;
+    const { completedChallengeCount, failedChallengeCount } =
+      getParticipationStats(v.participating_in);
+    // checked via the prisma query
+    /* eslint-disable @typescript-eslint/no-non-null-assertion*/
+    return {
+      userId,
+      username: username!,
+      name: name!,
+      avatar: {
+        animal: avatar_animal!,
+        color: avatar_color!,
+        background: avatar_bg!,
+      },
+      completedChallengeCount,
+      failedChallengeCount,
+    };
+    /* eslint-enable @typescript-eslint/no-non-null-assertion*/
+  });
+  return result;
+}
+
 export async function getGlobalWall(): Promise<UserList[]> {
   return [];
 }

@@ -4,10 +4,58 @@ import { Request, Response } from "express";
 import { challengeCount } from "../challenges/queries";
 import { Payload } from "../common/middlewares/checkToken";
 import { UserPatch, UserData, ErrorCode } from "../common/types";
-import { UserFriends } from "../common/types/users";
-import { handleServerError, handleUnauthRequest } from "../common/utils/errors";
+import { UserFriends, UserList, UserListQuery } from "../common/types/users";
+import {
+  CustomError,
+  handleKnownError,
+  handleServerError,
+  handleUnauthRequest,
+} from "../common/utils/errors";
 import { getUser, patchUser } from "./queries";
-import { getUserRecents } from "./services";
+import {
+  getGlobalWall,
+  getUserRecents,
+  getUserWall,
+  searchUsers,
+} from "./services";
+
+export async function index(
+  request: Request<any, any, any, UserListQuery>,
+  response: Response<UserList[], Payload>
+): Promise<void> {
+  try {
+    const { operation } = request.query;
+
+    if (operation === "search" && request.query.query) {
+      const result: UserList[] = await searchUsers(request.query.query);
+      response.status(200).send(result);
+      return;
+    } else if (operation === "wallGlobal") {
+      const shamedList: UserList[] = await getGlobalWall();
+      response.status(200).send(shamedList);
+      return;
+    } else if (operation === "wallRecents") {
+      const { userId } = response.locals.payload;
+      const shamedList: UserList[] = await getUserWall(userId);
+      response.status(200).send(shamedList);
+      return;
+    } else {
+      handleKnownError(
+        request,
+        response,
+        new CustomError(
+          ErrorCode.INVALID_REQUEST,
+          "The provided operation is not recognised"
+        )
+      );
+      return;
+    }
+  } catch (e) {
+    console.log(e);
+    handleServerError(request, response);
+    return;
+  }
+}
 
 export async function indexFriends(
   request: Request<any, any, any, any>,

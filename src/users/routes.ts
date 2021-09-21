@@ -1,11 +1,11 @@
 import { Router } from "express";
 
 import { checkValidToken } from "../common/middlewares/checkToken";
-import { indexFriends, show, update } from "./controllers";
+import { index, indexFriends, show, update } from "./controllers";
 
 export const users = Router();
 
-users.get("");
+users.get("", index);
 
 export const self = Router();
 
