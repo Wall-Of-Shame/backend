@@ -1,8 +1,8 @@
 import { Request, Response } from "express";
 
-import { challengeCount } from "../challenges/queries";
 import { AuthReq, AuthRes, ErrRes } from "../common/types";
-import { createUser, getUser } from "../users/queries";
+import prisma from "../prisma";
+import { createUser } from "../users/queries";
 import { handleInvalidCredentialsError } from "./handlers";
 import { getUserToken, validateToken } from "./services";
 import { User } from ".prisma/client";
@@ -20,13 +20,31 @@ export async function login(
       return;
     }
 
-    let user: User | null = await getUser({
-      email: verifiedToken.email,
-    });
-    if (!user) {
+    const users = await prisma.$queryRaw<
+      Array<
+        User & {
+          failedcount: number;
+          completecount: number;
+        }
+      >
+    >`
+    SELECT *
+      FROM "ParticipationStats"
+      WHERE "email" = ${verifiedToken.email}
+      LIMIT 1
+    `;
+
+    // user should be created or throw
+    let user: User & {
+      failedcount: number;
+      completecount: number;
+    };
+    if (users.length === 0) {
       user = await createUser({
         email: verifiedToken.email,
-      });
+      }).then((result) => ({ ...result, failedcount: 0, completecount: 0 }));
+    } else {
+      user = users[0];
     }
 
     const token: string = getUserToken(user);
@@ -41,9 +59,9 @@ export async function login(
       avatar_animal,
       avatar_color,
       avatar_bg,
+      completecount,
+      failedcount,
     } = user;
-    const { completedChallengeCount, failedChallengeCount } =
-      await challengeCount(user.userId);
     response.status(200).send({
       token,
       user: {
@@ -51,8 +69,8 @@ export async function login(
         email,
         username: username ?? undefined,
         name: username && name ? name : undefined,
-        completedChallengeCount: username ? completedChallengeCount : undefined,
-        failedChallengeCount: username ? failedChallengeCount : undefined,
+        completedChallengeCount: username ? completecount : undefined,
+        failedChallengeCount: username ? failedcount : undefined,
         avatar: {
           animal: username && avatar_animal ? avatar_animal : undefined,
           color: username && avatar_color ? avatar_color : undefined,

@@ -1,7 +1,6 @@
 import { User } from "@prisma/client";
 import { Request, Response } from "express";
 
-import { challengeCount } from "../challenges/queries";
 import { Payload } from "../common/middlewares/checkToken";
 import { UserPatch, UserData, ErrorCode } from "../common/types";
 import { UserFriends, UserList, UserListQuery } from "../common/types/users";
@@ -11,7 +10,8 @@ import {
   handleServerError,
   handleUnauthRequest,
 } from "../common/utils/errors";
-import { getUser, patchUser } from "./queries";
+import prisma from "../prisma";
+import { patchUser } from "./queries";
 import {
   getGlobalWall,
   getUserRecents,
@@ -85,14 +85,28 @@ export async function show(
   response: Response<UserData, Payload>
 ): Promise<void> {
   try {
-    const user: User | null = await getUser({
-      userId: response.locals.payload.userId,
-    });
-    if (!user) {
+    const { userId: reqUserId } = response.locals.payload;
+
+    const users = await prisma.$queryRaw<
+      Array<
+        User & {
+          failedcount: number;
+          completecount: number;
+        }
+      >
+    >`
+    SELECT *
+      FROM "ParticipationStats"
+      WHERE "userId" = ${reqUserId}
+      LIMIT 1
+    `;
+
+    if (users.length === 0) {
       handleUnauthRequest(response);
       return;
     }
 
+    const user = users[0];
     const {
       userId,
       email,
@@ -103,16 +117,16 @@ export async function show(
       avatar_animal,
       avatar_color,
       avatar_bg,
+      completecount,
+      failedcount,
     } = user;
-    const { completedChallengeCount, failedChallengeCount } =
-      await challengeCount(userId);
     response.status(200).send({
       userId,
       email,
       username: username ?? undefined,
       name: username && name ? name : undefined,
-      completedChallengeCount: username ? completedChallengeCount : undefined,
-      failedChallengeCount: username ? failedChallengeCount : undefined,
+      completedChallengeCount: username ? completecount : undefined,
+      failedChallengeCount: username ? failedcount : undefined,
       avatar: {
         animal: username && avatar_animal ? avatar_animal : undefined,
         color: username && avatar_color ? avatar_color : undefined,

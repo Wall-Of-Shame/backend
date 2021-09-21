@@ -73,7 +73,9 @@ export async function searchUsers(query: string): Promise<UserList[]> {
         { avatar_color: { not: null } },
         {
           OR: [
-            { username: { contains: query } },
+            // all username should be lowercase => username search is case insensitive
+            { username: { contains: query.toLowerCase() } },
+            // name search is case sensitive
             { name: { contains: query } },
           ],
         },
