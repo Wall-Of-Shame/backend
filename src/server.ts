@@ -20,7 +20,6 @@ const corsOptions: CorsOptions = {
 
 function verifyEnvOrReject(): void {
   const {
-    GOOGLE_APPLICATION_CREDENTIALS,
     JWT_SECRET,
     CLOUDINARY_NAME,
     CLOUDINARY_KEY,
@@ -31,7 +30,6 @@ function verifyEnvOrReject(): void {
   } = process.env;
 
   if (
-    !GOOGLE_APPLICATION_CREDENTIALS ||
     !JWT_SECRET ||
     !CLOUDINARY_NAME ||
     !CLOUDINARY_KEY ||

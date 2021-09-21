@@ -756,31 +756,47 @@ export async function acceptChallenge(
       return;
     }
 
+    // see if need to add contact
+    const isNewContact: boolean = await prisma.contact
+      .count({
+        where: {
+          pers1_id: userId,
+          pers2_id: challenge.ownerId,
+        },
+      })
+      .then((count) => count === 0);
+
     const currentDate = new Date();
+    const updateArgs: Prisma.ParticipantUpdateArgs = {
+      where: {
+        challengeId_userId: {
+          challengeId,
+          userId,
+        },
+      },
+      data: {
+        joined_at: currentDate,
+      },
+      select: {
+        userId: true,
+        challengeId: true,
+      },
+    };
+
     try {
-      await prisma.$transaction([
-        prisma.participant.update({
-          where: {
-            challengeId_userId: {
-              challengeId,
-              userId,
+      if (!isNewContact) {
+        await prisma.participant.update(updateArgs);
+      } else {
+        await prisma.$transaction([
+          prisma.participant.update(updateArgs),
+          prisma.contact.create({
+            data: {
+              pers1_id: userId,
+              pers2_id: challenge.ownerId,
             },
-          },
-          data: {
-            joined_at: currentDate,
-          },
-          select: {
-            userId: true,
-            challengeId: true,
-          },
-        }),
-        prisma.contact.create({
-          data: {
-            pers1_id: userId,
-            pers2_id: challenge.ownerId,
-          },
-        }),
-      ]);
+          }),
+        ]);
+      }
     } catch (e) {
       const error: PrismaClientKnownRequestError = e as any;
       // Participant entry not found - likely to be invited by link
