@@ -36,7 +36,8 @@ export interface ChallengeData {
 // Return schema for the `GET /challenges` route
 export interface ChallengeList {
   ongoing: ChallengeData[];
-  pending: ChallengeData[];
+  pendingStart: ChallengeData[];
+  pendingResponse: ChallengeData[];
 }
 
 // Input schema for the `PATCH /challenges/:challengeId` route

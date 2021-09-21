@@ -185,9 +185,10 @@ export async function index(
         },
       },
     });
-
+    /** */
     const ongoing: ChallengeData[] = [];
-    const pending: ChallengeData[] = [];
+    const pendingStart: ChallengeData[] = [];
+    const pendingResponse: ChallengeData[] = [];
 
     /* eslint-disable @typescript-eslint/no-non-null-assertion,no-inner-declarations */
     for (const participantOf of particingInstances) {
@@ -278,19 +279,35 @@ export async function index(
           },
         };
       }
-      /* eslint-disable @typescript-eslint/no-non-null-assertion,no-inner-declarations */
 
-      if (participantOf.joined_at !== null) {
-        ongoing.push(formatChallenge(participantOf.challenge));
-      } else {
-        pending.push(formatChallenge(participantOf.challenge));
+      const c: ChallengeData = formatChallenge(participantOf.challenge);
+      if (
+        participantOf.joined_at !== null &&
+        participantOf.challenge.startAt !== null
+      ) {
+        // ongoing: user accepted + challenge has started
+        ongoing.push(c);
+      } else if (
+        participantOf.challenge.startAt === null &&
+        participantOf.joined_at
+      ) {
+        // pendingStart: user accepted + challenge not started
+        pendingStart.push(c);
+      } else if (
+        participantOf.challenge.startAt === null &&
+        participantOf.joined_at === null
+      ) {
+        // pendingResponse: user has not accepted + challenge not started
+        pendingResponse.push(c);
       }
     }
+    /* eslint-enable @typescript-eslint/no-non-null-assertion,no-inner-declarations */
+
     response.status(200).send({
       ongoing,
-      pending,
+      pendingStart,
+      pendingResponse,
     });
-
     return;
   } catch (e) {
     handleServerError(request, response);

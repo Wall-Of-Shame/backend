@@ -12,7 +12,7 @@ import {
   show,
   update,
 } from "./controllers";
-import { submitProof } from "./proofs/controllers";
+import { deleteProof, submitProof } from "./proofs/controllers";
 
 const router = Router();
 router.use(checkValidToken);
@@ -26,8 +26,10 @@ router.post("", create);
 router.get("/:challengeId", show);
 router.get("", index);
 
+router.patch("/:challengeId/proofs", uploader.single("proof"), submitProof);
 router.patch("/:challengeId", update);
 
+router.delete("/:challengeId/proofs", deleteProof);
 router.delete("/:challengeId", remove);
 
 export default router;
