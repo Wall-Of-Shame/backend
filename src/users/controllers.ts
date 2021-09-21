@@ -24,6 +24,7 @@ export async function index(
   response: Response<UserList[], Payload>
 ): Promise<void> {
   try {
+    const { userId } = response.locals.payload;
     const { operation } = request.query;
 
     if (operation === "search" && request.query.query) {
@@ -35,7 +36,6 @@ export async function index(
       response.status(200).send(shamedList);
       return;
     } else if (operation === "wallRecents") {
-      const { userId } = response.locals.payload;
       const shamedList: UserList[] = await getUserWall(userId);
       response.status(200).send(shamedList);
       return;

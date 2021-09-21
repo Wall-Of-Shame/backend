@@ -5,6 +5,7 @@ import { index, indexFriends, show, update } from "./controllers";
 
 export const users = Router();
 
+users.use(checkValidToken);
 users.get("", index);
 
 export const self = Router();
