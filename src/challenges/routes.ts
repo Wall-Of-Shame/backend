@@ -10,9 +10,9 @@ import {
   rejectChallenge,
   remove,
   show,
-  submitProof,
   update,
 } from "./controllers";
+import { submitProof } from "./proofs/controllers";
 
 const router = Router();
 router.use(checkValidToken);

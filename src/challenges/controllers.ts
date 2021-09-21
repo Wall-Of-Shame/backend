@@ -13,7 +13,6 @@ import {
   ChallengePost,
   UserMini,
 } from "../common/types/challenges";
-import { ProofPath } from "../common/types/proofs";
 import {
   CustomError,
   handleKnownError,
@@ -229,7 +228,7 @@ export async function index(
             avatar_bg,
             avatar_color,
           } = participant.user;
-          if (participant.invited_at === null) {
+          if (participant.joined_at === null) {
             pending.push({
               userId: userId,
               username: username!,
@@ -281,7 +280,7 @@ export async function index(
       }
       /* eslint-disable @typescript-eslint/no-non-null-assertion,no-inner-declarations */
 
-      if (participantOf.invited_at !== null) {
+      if (participantOf.joined_at !== null) {
         ongoing.push(formatChallenge(participantOf.challenge));
       } else {
         pending.push(formatChallenge(participantOf.challenge));
@@ -908,50 +907,6 @@ export async function completeChallenge(
       handleNotFoundError(response, "User has not accepted this challenge.");
       return;
     }
-  } catch (e) {
-    console.log(e);
-    handleServerError(request, response);
-    return;
-  }
-}
-
-// submit proof
-export async function submitProof(
-  request: Request<ChallengeId, any, any, any>,
-  response: Response<ProofPath, Payload>
-): Promise<void> {
-  try {
-    const { challengeId } = request.params;
-    const { userId } = response.locals.payload;
-
-    const uploadInfo = request.file;
-    if (!uploadInfo) {
-      handleKnownError(
-        request,
-        response,
-        new CustomError(ErrorCode.INVALID_REQUEST, "Missing key.")
-      );
-      return;
-    }
-
-    const { path } = uploadInfo;
-
-    await prisma.participant.update({
-      where: {
-        challengeId_userId: {
-          challengeId,
-          userId,
-        },
-      },
-      data: {
-        evidence_link: path,
-      },
-    });
-
-    response.status(200).send({
-      proofPath: path,
-    });
-    return;
   } catch (e) {
     console.log(e);
     handleServerError(request, response);
