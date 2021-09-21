@@ -125,7 +125,7 @@ export async function create(
         data: {
           title,
           description,
-          startAt: parseJSON(endAt),
+          startAt: parseJSON(startAt),
           endAt: parseJSON(endAt),
           type,
           ownerId: owner.userId,
