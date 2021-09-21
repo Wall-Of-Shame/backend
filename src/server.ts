@@ -25,6 +25,9 @@ function verifyEnvOrReject(): void {
     CLOUDINARY_NAME,
     CLOUDINARY_KEY,
     CLOUDINARY_SECRET,
+    FIREBASE_PROJECT_ID,
+    FIREBASE_CLIENT_EMAIL,
+    FIREBASE_PRIVATE_KEY,
   } = process.env;
 
   if (
@@ -32,7 +35,10 @@ function verifyEnvOrReject(): void {
     !JWT_SECRET ||
     !CLOUDINARY_NAME ||
     !CLOUDINARY_KEY ||
-    !CLOUDINARY_SECRET
+    !CLOUDINARY_SECRET ||
+    !FIREBASE_PROJECT_ID ||
+    !FIREBASE_CLIENT_EMAIL ||
+    !FIREBASE_PRIVATE_KEY
   ) {
     throw new Error("Environment was not configured properly.");
   }
@@ -63,7 +69,11 @@ export class ApiServer {
     app.use(API_VERSION, routes);
 
     admin.initializeApp({
-      credential: admin.credential.applicationDefault(),
+      credential: admin.credential.cert({
+        projectId: process.env.FIREBASE_PROJECT_ID,
+        clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+        privateKey: process.env.FIREBASE_PRIVATE_KEY,
+      }),
     });
 
     const message =

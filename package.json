@@ -46,5 +46,8 @@
     "clean": "tsc --build --clean",
     "tsc": "tsc --noEmit",
     "lint": "prettier --write --config .prettierrc . && eslint . --ext .ts"
+  },
+  "engines": {
+    "node": "14.17.3"
   }
 }
