@@ -22,7 +22,6 @@ import {
 } from "../common/utils/errors";
 import prisma from "../prisma";
 import { isUserInitiated } from "../users/utils";
-import { createChallenge } from "./queries";
 import { isChallengeOver, isChallengeRunning, isStartBeforeEnd } from "./utils";
 import { Prisma } from ".prisma/client";
 
@@ -41,9 +40,14 @@ export async function create(
       participants: reqParticipants,
     } = request.body;
 
+    // get owner + recents
     const owner = await prisma.user.findFirst({
-      where: {
-        userId,
+      where: { userId },
+      include: {
+        // befriender
+        contacts_pers1: {
+          select: { pers2_id: true }, // befrieedee
+        },
       },
     });
     if (!owner) {
@@ -72,7 +76,6 @@ export async function create(
       );
       return;
     }
-
     const participants = await prisma.user.findMany({
       where: {
         userId: {
@@ -91,36 +94,47 @@ export async function create(
       },
     });
 
+    // newRecents = valid participants (ie users) - owner's existing recents
+    const newRecents = participants.filter(
+      (n) => !owner.contacts_pers1.find((e) => e.pers2_id === n.userId)
+    );
+
     const currentDate = new Date();
-    const { challengeId } = await createChallenge({
-      data: {
-        title,
-        description,
-        endAt: parseJSON(endAt),
-        type,
-        ownerId: owner.userId,
-        participants: {
-          createMany: {
-            data: [
-              ...participants,
-              {
-                userId: owner.userId,
-                joined_at: currentDate,
-              },
-            ],
-            skipDuplicates: true,
+    const [challengeId] = await prisma.$transaction([
+      prisma.challenge.create({
+        data: {
+          title,
+          description,
+          endAt: parseJSON(endAt),
+          type,
+          ownerId: owner.userId,
+          participants: {
+            createMany: {
+              data: [
+                ...participants,
+                {
+                  userId: owner.userId,
+                  joined_at: currentDate,
+                },
+              ],
+              skipDuplicates: true,
+            },
           },
         },
-      },
-      select: {
-        challengeId: true,
-      },
-    });
+        select: {
+          challengeId: true,
+        },
+      }),
+      prisma.contact.createMany({
+        data: newRecents.map((n) => ({
+          pers1_id: owner.userId,
+          pers2_id: n.userId,
+        })),
+      }),
+    ]);
 
     response.set("location", "/challenges/" + challengeId);
-    response.status(200).send({
-      challengeId,
-    });
+    response.status(200).send(challengeId);
     return;
   } catch (e) {
     console.log(e);
@@ -175,6 +189,7 @@ export async function index(
     const ongoing: ChallengeData[] = [];
     const pending: ChallengeData[] = [];
 
+    /* eslint-disable @typescript-eslint/no-non-null-assertion,no-inner-declarations */
     for (const participantOf of particingInstances) {
       if (isChallengeOver(participantOf.challenge.endAt)) {
         // these form the history
@@ -186,7 +201,6 @@ export async function index(
       // allow for !. in this block => assume that username, name, avatars are all present
       // see  `POST challenges/`, `PATCH challenges/:challengeId`, `POST challenges/accept`,
       // these are the endpoints that insert rows into participants, and they check for these fields to exist
-      /* eslint-disable @typescript-eslint/no-non-null-assertion,no-inner-declarations */
       function formatChallenge(
         rawChallenge: typeof participantOf.challenge
       ): ChallengeData {
@@ -240,7 +254,6 @@ export async function index(
         }
 
         // format the challenge
-        /* eslint-enable @typescript-eslint/no-non-null-assertion,no-inner-declarations */
         return {
           challengeId,
           title,
@@ -265,6 +278,7 @@ export async function index(
           },
         };
       }
+      /* eslint-disable @typescript-eslint/no-non-null-assertion,no-inner-declarations */
 
       if (participantOf.invited_at !== null) {
         ongoing.push(formatChallenge(participantOf.challenge));
@@ -426,6 +440,14 @@ export async function update(
     const challenge = await prisma.challenge.findUnique({
       where: { challengeId },
       include: {
+        owner: {
+          include: {
+            // befriender
+            contacts_pers1: {
+              select: { pers2_id: true }, // befrieedee
+            },
+          },
+        },
         participants: {
           select: {
             userId: true,
@@ -476,6 +498,7 @@ export async function update(
         return;
       }
 
+      let newRecents: { userId: string }[] | undefined;
       const args: Prisma.ChallengeUpdateArgs = {
         where: {
           challengeId,
@@ -514,14 +537,35 @@ export async function update(
             ),
           },
           // removed participant: exists in the existing list, not in the input list
-          // do not delete owner as participant => handled by above query
+          // do not delete owner as participant
           deleteMany: challenge.participants.filter(
-            (e) => !participants.find((p) => p.userId === e.userId)
+            (e) =>
+              e.userId !== challenge.ownerId &&
+              !participants.find((p) => p.userId === e.userId)
           ),
         };
+
+        // newRecents = valid participants (ie users) - owner's existing recents
+        newRecents = participants.filter(
+          (n) =>
+            !challenge.owner.contacts_pers1.find((e) => e.pers2_id === n.userId)
+        );
       }
 
-      await prisma.challenge.update(args);
+      if (newRecents) {
+        await prisma.$transaction([
+          prisma.challenge.update(args),
+          prisma.contact.createMany({
+            data: newRecents.map((n) => ({
+              pers1_id: challenge.ownerId,
+              pers2_id: n.userId,
+            })),
+          }),
+        ]);
+      } else {
+        await prisma.challenge.update(args);
+      }
+
       response.status(200).send({});
       return;
     } catch (e) {
@@ -620,7 +664,7 @@ export async function acceptChallenge(
 
     const challenge = await prisma.challenge.findUnique({
       where: { challengeId },
-      select: { challengeId: true, endAt: true },
+      select: { challengeId: true, endAt: true, ownerId: true },
     });
     if (!challenge || isChallengeOver(challenge.endAt)) {
       handleKnownError(
@@ -664,36 +708,52 @@ export async function acceptChallenge(
 
     const currentDate = new Date();
     try {
-      await prisma.participant.update({
-        where: {
-          challengeId_userId: {
-            challengeId,
-            userId,
+      await prisma.$transaction([
+        prisma.participant.update({
+          where: {
+            challengeId_userId: {
+              challengeId,
+              userId,
+            },
           },
-        },
-        data: {
-          joined_at: currentDate,
-        },
-        select: {
-          userId: true,
-          challengeId: true,
-        },
-      });
-    } catch (e) {
-      const error: PrismaClientKnownRequestError = e as any;
-      // Participant entry not found - likely to be invited by link
-      if (error.code === "P2025") {
-        await prisma.participant.create({
           data: {
-            userId,
-            challengeId,
             joined_at: currentDate,
           },
           select: {
             userId: true,
             challengeId: true,
           },
-        });
+        }),
+        prisma.contact.create({
+          data: {
+            pers1_id: userId,
+            pers2_id: challenge.ownerId,
+          },
+        }),
+      ]);
+    } catch (e) {
+      const error: PrismaClientKnownRequestError = e as any;
+      // Participant entry not found - likely to be invited by link
+      if (error.code === "P2025") {
+        await prisma.$transaction([
+          prisma.participant.create({
+            data: {
+              userId,
+              challengeId,
+              joined_at: currentDate,
+            },
+            select: {
+              userId: true,
+              challengeId: true,
+            },
+          }),
+          prisma.contact.create({
+            data: {
+              pers1_id: userId,
+              pers2_id: challenge.ownerId,
+            },
+          }),
+        ]);
       } else {
         throw e;
       }
