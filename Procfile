@@ -1,1 +1,1 @@
-web: node start:heroku
+web: yarn start:heroku
