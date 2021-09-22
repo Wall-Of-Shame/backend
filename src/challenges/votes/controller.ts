@@ -18,13 +18,15 @@ function countAccusers(
     victimId: string;
     accuserId: string;
   }[]
-): Map<string, number> {
-  const map: Map<string, number> = new Map();
+): Map<string, string[]> {
+  const map: Map<string, string[]> = new Map();
   for (const v of votes) {
     if (map.has(v.victimId)) {
-      map.set(v.victimId, map.get(v.victimId)! + 1);
+      const list = map.get(v.victimId)!;
+      list.push(v.accuserId);
+      map.set(v.victimId, list);
     } else {
-      map.set(v.victimId, 1);
+      map.set(v.victimId, [v.accuserId]);
     }
   }
   return map;
@@ -209,7 +211,7 @@ export async function showVotes(
           name: p.user.name!,
           evidenceLink: p.evidence_link ?? undefined,
         },
-        votesReceived: countMap.get(p.userId) ?? 0,
+        accusers: countMap.get(p.userId) ?? [],
       }));
 
     response.status(200).send(result);

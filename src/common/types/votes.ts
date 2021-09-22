@@ -14,6 +14,5 @@ export interface VoteData {
     name: string;
     evidenceLink?: string;
   };
-  votesReceived: number;
-  // accusers: string[]
+  accusers: string[];
 }
