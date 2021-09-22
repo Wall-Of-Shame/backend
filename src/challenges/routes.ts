@@ -10,6 +10,7 @@ import {
   remove,
   show,
   update,
+  vetoResults,
 } from "./controllers";
 import { deleteProof, submitProof } from "./proofs/controllers";
 
@@ -19,6 +20,7 @@ router.use(checkValidToken);
 router.post("/:challengeId/accept", acceptChallenge);
 router.post("/:challengeId/reject", rejectChallenge);
 router.post("/:challengeId/complete", completeChallenge);
+router.post("/:challengeId/vetoResults", vetoResults);
 router.post("/:challengeId/proofs", submitProof);
 router.post("", create);
 

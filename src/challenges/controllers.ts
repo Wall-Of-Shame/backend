@@ -1053,7 +1053,7 @@ export async function completeChallenge(
 }
 
 // accept veto results from realtime db
-export async function vetoChallenge(
+export async function vetoResults(
   request: Request<ChallengeId, any, ChallengeVetoPost, any>,
   response: Response<any, any>
 ): Promise<void> {
