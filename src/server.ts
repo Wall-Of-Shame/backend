@@ -8,7 +8,6 @@ import { Server } from "http";
 import morgan from "morgan";
 import { Multer } from "multer";
 
-import uploader from "./cloudinary";
 import prisma from "./prisma";
 import routes from "./routes";
 
@@ -61,7 +60,6 @@ export class ApiServer {
       api_key: process.env.CLOUDINARY_KEY,
       api_secret: process.env.CLOUDINARY_SECRET,
     });
-    this.uploader = uploader;
 
     const app = express();
     app.use(express.json({ limit: "20mb" }));
