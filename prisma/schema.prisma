@@ -30,6 +30,8 @@ enum ChallengeType {
 model User {
   userId                String        @id @default(uuid())
   email                 String        @unique
+  fb_reg_token          String?
+  fb_reg_token_time     DateTime?
   username              String?       @unique
   name                  String?
   cfg_deadline_reminder Boolean       @default(true)

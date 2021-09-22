@@ -7,10 +7,11 @@ import prisma from "../prisma";
 
 export async function createUser(data: {
   email: string;
+  messageToken?: string;
   name?: string;
   username?: string;
 }): Promise<User> {
-  const { username, name, email } = data;
+  const { username, name, email, messageToken } = data;
 
   try {
     const user = await prisma.user.create({
@@ -18,6 +19,8 @@ export async function createUser(data: {
         email,
         name,
         username,
+        fb_reg_token: messageToken,
+        fb_reg_token_time: messageToken ? new Date() : undefined,
       },
     });
 

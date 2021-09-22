@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 
-import { AuthReq, AuthRes, ErrRes } from "../common/types";
+import { AuthReq, AuthRes, ErrorCode, ErrRes } from "../common/types";
+import { CustomError, handleKnownError } from "../common/utils/errors";
 import prisma from "../prisma";
 import { createUser } from "../users/queries";
 import { handleInvalidCredentialsError } from "./handlers";
@@ -12,7 +13,15 @@ export async function login(
   response: Response<AuthRes | ErrRes>
 ): Promise<void> {
   try {
-    const { token: reqToken } = request.body;
+    const { token: reqToken, messagingToken: reqMessage } = request.body;
+    if (!reqToken) {
+      handleKnownError(
+        request,
+        response,
+        new CustomError(ErrorCode.INVALID_REQUEST, "Request body is malformed.")
+      );
+      return;
+    }
 
     const verifiedToken = await validateToken(reqToken);
     if (!verifiedToken || !verifiedToken.email) {
@@ -42,9 +51,19 @@ export async function login(
     if (users.length === 0) {
       user = await createUser({
         email: verifiedToken.email,
+        messageToken: reqMessage,
       }).then((result) => ({ ...result, failedcount: 0, completecount: 0 }));
     } else {
       user = users[0];
+      await prisma.user.update({
+        where: {
+          userId: user.userId,
+        },
+        data: {
+          fb_reg_token: reqMessage,
+          fb_reg_token_time: reqMessage ? new Date() : undefined,
+        },
+      });
     }
 
     const token: string = getUserToken(user);
