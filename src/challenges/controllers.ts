@@ -161,7 +161,7 @@ export async function create(
       // safely assert from filter
       .map((p) => p.fb_reg_token!);
     if (notificationSquad.length > 0) {
-      await sendMessages({
+      const result = await sendMessages({
         data: {
           body:
             request.body.notificationMessage ??
@@ -169,6 +169,9 @@ export async function create(
         },
         tokens: notificationSquad,
       });
+      console.log(
+        `Succeess: ${result.responses}\n` + `Failures: ${result.failureCount}`
+      );
     }
 
     response.set("location", "/challenges/" + challengeId);
