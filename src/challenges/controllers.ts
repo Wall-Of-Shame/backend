@@ -170,7 +170,8 @@ export async function create(
         tokens: notificationSquad,
       });
       console.log(
-        `Succeess: ${result.responses}\n` + `Failures: ${result.failureCount}`
+        `Succeess: ${result.successCount}\n` +
+          `Failures: ${result.failureCount}`
       );
     }
 
