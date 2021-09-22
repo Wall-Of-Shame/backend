@@ -164,7 +164,8 @@ export async function create(
       .map((p) => p.fb_reg_token!);
     if (notificationSquad.length > 0) {
       const result = await sendMessages({
-        data: {
+        notification: {
+          title: "Wall of Shame: Challenge Invitation",
           body:
             request.body.notificationMessage ??
             `You have been challenged by ${owner.name}`,
