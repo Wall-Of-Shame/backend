@@ -34,7 +34,7 @@ import { Prisma } from ".prisma/client";
 
 export async function create(
   request: Request<any, any, ChallengePost, any>,
-  response: Response<any, Payload>
+  response: Response<ChallengeId, Payload>
 ): Promise<void> {
   try {
     const { userId } = response.locals.payload;
@@ -1069,6 +1069,29 @@ export async function vetoResults(
       return;
     }
 
+    const challenge = await prisma.challenge.findFirst({
+      where: { challengeId },
+      select: {
+        challengeId: true,
+        endAt: true,
+      },
+    });
+
+    if (!challenge) {
+      handleNotFoundError(response, "Challenge was not found.");
+      return;
+    } else if (!isChallengeOver(challenge.endAt)) {
+      handleKnownError(
+        request,
+        response,
+        new CustomError(
+          ErrorCode.CHALLENGE_NOT_OVER,
+          "Challenge has not ended."
+        )
+      );
+      return;
+    }
+
     const participants: string[] = await prisma.participant
       .findMany({
         where: {
@@ -1102,6 +1125,7 @@ export async function vetoResults(
       }),
       prisma.participant.updateMany({
         where: {
+          challengeId,
           userId: { in: participants },
         },
         data: {
