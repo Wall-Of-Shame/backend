@@ -19,6 +19,11 @@ export interface ChallengePost {
   participants: string[];
 }
 
+// Input schema for `POST /challenges/:challengeId/veto
+export interface ChallengeVetoPost {
+  vetoedParticipants: string[];
+}
+
 // Return schema for the `GET /challenges/:challengeId` route.
 export interface ChallengeData {
   challengeId: string;
@@ -28,6 +33,7 @@ export interface ChallengeData {
   endAt: string;
   participantCount: number;
   type: ChallengeType;
+  hasReleasedResult: boolean;
   owner: DeepPartialUserMini;
   participants: {
     accepted: {

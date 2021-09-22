@@ -1,6 +1,6 @@
 // concept of challenge end date
 // => create: make sure end date is > current
-// => patch: same^
+// => patch: same^, cannot edit when challenge has started
 // => index: ongoing (> current + started/joined_at) || pending (> current + X joined_at) || history (<= current)
 // => show: hmm maybe no need
 // => accept: X ended. Allow for after start, then joined.

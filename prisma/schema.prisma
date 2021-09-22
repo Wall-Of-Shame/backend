@@ -46,26 +46,28 @@ model User {
 }
 
 model Challenge {
-  challengeId  String        @id @default(uuid())
-  title        String
-  description  String?
-  startAt      DateTime?
-  endAt        DateTime
-  type         ChallengeType
-  ownerId      String
-  owner        User          @relation(fields: [ownerId], references: [userId])
-  participants Participant[]
+  challengeId         String        @id @default(uuid())
+  title               String
+  description         String?
+  startAt             DateTime?
+  endAt               DateTime
+  type                ChallengeType
+  ownerId             String
+  owner               User          @relation(fields: [ownerId], references: [userId])
+  participants        Participant[]
+  has_released_result Boolean       @default(false) // only changed through realtime db
 }
 
 model Participant {
-  challengeId   String
-  challenge     Challenge @relation(fields: [challengeId], references: [challengeId])
-  userId        String
-  user          User      @relation(fields: [userId], references: [userId])
-  invited_at    DateTime  @default(now())
-  joined_at     DateTime?
-  completed_at  DateTime?
-  evidence_link String?
+  challengeId     String
+  challenge       Challenge @relation(fields: [challengeId], references: [challengeId])
+  userId          String
+  user            User      @relation(fields: [userId], references: [userId])
+  invited_at      DateTime  @default(now())
+  joined_at       DateTime?
+  completed_at    DateTime?
+  evidence_link   String?
+  has_been_vetoed Boolean   @default(false)
 
   @@id([challengeId, userId])
 }

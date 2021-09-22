@@ -12,6 +12,7 @@ import {
   ChallengeList,
   ChallengePatch,
   ChallengePost,
+  ChallengeVetoPost,
   UserMini,
 } from "../common/types/challenges";
 import {
@@ -159,6 +160,7 @@ export async function create(
     const notificationSquad: string[] = participants
       .filter((p) => p.cfg_invites_notif && p.fb_reg_token)
       // safely assert from filter
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       .map((p) => p.fb_reg_token!);
     if (notificationSquad.length > 0) {
       const result = await sendMessages({
@@ -252,6 +254,7 @@ export async function index(
           type,
           owner,
           participants,
+          has_released_result,
         } = rawChallenge;
 
         const accepted: UserMini[] = [];
@@ -320,6 +323,7 @@ export async function index(
           startAt: startAt ? startAt.toISOString() : null,
           endAt: endAt.toISOString(),
           type: type,
+          hasReleasedResult: has_released_result,
           owner: {
             userId: owner.userId,
             username: owner.username!,
@@ -439,6 +443,7 @@ export async function show(
       type,
       owner,
       participants,
+      has_released_result,
     } = challenge;
     const { userId, username, name, avatar_animal, avatar_color, avatar_bg } =
       owner;
@@ -489,6 +494,7 @@ export async function show(
       endAt: endAt.toISOString(),
       type,
       participantCount: accepted.length,
+      hasReleasedResult: has_released_result,
       owner: {
         userId: userId,
         username: username ?? undefined,
@@ -556,11 +562,14 @@ export async function update(
       handleNotFoundError(response, "Challenge was not found.");
       return;
     }
-    if (isChallengeOver(challenge.endAt)) {
+    if (hasChallengeStarted(challenge.startAt)) {
       handleKnownError(
         request,
         response,
-        new CustomError(ErrorCode.CHALLENGE_OVER, "Challenge is over.")
+        new CustomError(
+          ErrorCode.CHALLENGE_STARTED,
+          "Challenge has already started."
+        )
       );
       return;
     }
@@ -1036,6 +1045,73 @@ export async function completeChallenge(
       handleNotFoundError(response, "User has not accepted this challenge.");
       return;
     }
+  } catch (e) {
+    console.log(e);
+    handleServerError(request, response);
+    return;
+  }
+}
+
+// accept veto results from realtime db
+export async function vetoChallenge(
+  request: Request<ChallengeId, any, ChallengeVetoPost, any>,
+  response: Response<any, any>
+): Promise<void> {
+  try {
+    const { challengeId } = request.params;
+    const { vetoedParticipants } = request.body;
+    if (!challengeId || !vetoedParticipants) {
+      handleKnownError(
+        request,
+        response,
+        new CustomError(ErrorCode.INVALID_REQUEST, "Request body is malformed.")
+      );
+      return;
+    }
+
+    const participants: string[] = await prisma.participant
+      .findMany({
+        where: {
+          challengeId, //  participant instances for this challenge
+          userId: { in: vetoedParticipants }, // users that have been vetoed
+          joined_at: { not: null }, // have actually joined
+          completed_at: { not: null }, // have actually completed
+          user: {
+            // valid users
+            username: { not: null },
+            name: { not: null },
+            avatar_animal: { not: null },
+            avatar_bg: { not: null },
+            avatar_color: { not: null },
+          },
+        },
+        select: {
+          userId: true,
+        },
+      })
+      .then((result) => result.map((p) => p.userId));
+
+    await prisma.$transaction([
+      prisma.challenge.update({
+        where: {
+          challengeId,
+        },
+        data: {
+          has_released_result: true,
+        },
+      }),
+      prisma.participant.updateMany({
+        where: {
+          userId: { in: participants },
+        },
+        data: {
+          has_been_vetoed: true,
+        },
+      }),
+    ]);
+
+    response.status(200).send({});
+    return;
   } catch (e) {
     console.log(e);
     handleServerError(request, response);
