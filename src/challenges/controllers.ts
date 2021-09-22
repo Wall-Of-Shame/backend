@@ -209,14 +209,10 @@ export async function index(
     const ongoing: ChallengeData[] = [];
     const pendingStart: ChallengeData[] = [];
     const pendingResponse: ChallengeData[] = [];
+    const history: ChallengeData[] = [];
 
     /* eslint-disable @typescript-eslint/no-non-null-assertion,no-inner-declarations */
     for (const participantOf of participatingInstances) {
-      if (isChallengeOver(participantOf.challenge.endAt)) {
-        // these form the history
-        continue;
-      }
-
       // allow to do this cause of typing issue of participantOf.challenge
       // by right should check how to type this properly outside
       // allow for !. in this block => assume that username, name, avatars are all present
@@ -324,7 +320,14 @@ export async function index(
       }
 
       const c: ChallengeData = formatChallenge(participantOf.challenge);
+
       if (
+        isChallengeOver(participantOf.challenge.endAt) &&
+        hasUserAccepted(participantOf.joined_at)
+      ) {
+        history.push(c);
+        continue;
+      } else if (
         hasUserAccepted(participantOf.joined_at) &&
         hasChallengeStarted(participantOf.challenge.startAt)
       ) {
@@ -350,6 +353,7 @@ export async function index(
       ongoing,
       pendingStart,
       pendingResponse,
+      history,
     });
     return;
   } catch (e) {

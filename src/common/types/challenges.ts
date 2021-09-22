@@ -42,6 +42,7 @@ export interface ChallengeList {
   ongoing: ChallengeData[];
   pendingStart: ChallengeData[];
   pendingResponse: ChallengeData[];
+  history: ChallengeData[];
 }
 
 // Input schema for the `PATCH /challenges/:challengeId` route
