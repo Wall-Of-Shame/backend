@@ -13,6 +13,7 @@ import {
   vetoResults,
 } from "./controllers";
 import { deleteProof, submitProof } from "./proofs/controllers";
+import { submitVote } from "./votes/controller";
 
 const router = Router();
 router.use(checkValidToken);
@@ -22,6 +23,7 @@ router.post("/:challengeId/reject", rejectChallenge);
 router.post("/:challengeId/complete", completeChallenge);
 router.post("/:challengeId/vetoResults", vetoResults);
 router.post("/:challengeId/proofs", submitProof);
+router.post("/:challengeId/vote", submitVote);
 router.post("", create);
 
 router.get("/:challengeId", show);

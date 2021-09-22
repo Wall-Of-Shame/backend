@@ -43,6 +43,9 @@ model User {
   participating_in      Participant[]
   contacts_pers1        Contact[]     @relation("contacts_pers1")
   contacts_pers2        Contact[]     @relation("contacts_pers2")
+  votes_received        Vote[]        @relation("victim_user") // dont query with this
+  votes_given           Vote[]        @relation("accuser_user") // dont query with this
+
 }
 
 model Challenge {
@@ -56,6 +59,8 @@ model Challenge {
   owner               User          @relation(fields: [ownerId], references: [userId])
   participants        Participant[]
   has_released_result Boolean       @default(false) // only changed through realtime db
+  votes               Vote[] // unwise to query through here, too messy
+
 }
 
 model Participant {
@@ -68,6 +73,8 @@ model Participant {
   completed_at    DateTime?
   evidence_link   String?
   has_been_vetoed Boolean   @default(false)
+  votes_received  Vote[]    @relation("victim_participant")
+  votes_given     Vote[]    @relation("accuser_participant")
 
   @@id([challengeId, userId])
 }
@@ -79,4 +86,17 @@ model Contact {
   pers2    User   @relation("contacts_pers2", fields: [pers2_id], references: [userId])
 
   @@id([pers1_id, pers2_id])
+}
+
+model Vote {
+  challengeId         String
+  challenge           Challenge   @relation(fields: [challengeId], references: [challengeId])
+  victimId            String
+  victim              User        @relation("victim_user", fields: [victimId], references: [userId])
+  accuserId           String
+  accuser             User        @relation("accuser_user", fields: [accuserId], references: [userId])
+  victim_participant  Participant @relation("victim_participant", fields: [challengeId, victimId], references: [challengeId, userId])
+  accuser_participant Participant @relation("accuser_participant", fields: [challengeId, accuserId], references: [challengeId, userId])
+
+  @@unique([challengeId, victimId, accuserId])
 }
