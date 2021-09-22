@@ -3,6 +3,7 @@ import parseJSON from "date-fns/parseJSON";
 import { Request, Response } from "express";
 
 import { handleInvalidCredentialsError } from "../auth/handlers";
+import { sendMessages } from "../auth/services";
 import { Payload } from "../common/middlewares/checkToken";
 import { ErrorCode } from "../common/types";
 import {
@@ -110,6 +111,8 @@ export async function create(
       },
       select: {
         userId: true,
+        fb_reg_token: true,
+        cfg_invites_notif: true,
       },
     });
 
@@ -131,7 +134,7 @@ export async function create(
           participants: {
             createMany: {
               data: [
-                ...participants,
+                ...participants.map((p) => ({ userId: p.userId })),
                 {
                   userId: owner.userId,
                   joined_at: currentDate,
@@ -152,6 +155,21 @@ export async function create(
         })),
       }),
     ]);
+
+    const notificationSquad: string[] = participants
+      .filter((p) => p.cfg_invites_notif && p.fb_reg_token)
+      // safely assert from filter
+      .map((p) => p.fb_reg_token!);
+    if (notificationSquad.length > 0) {
+      await sendMessages({
+        data: {
+          body:
+            request.body.notificationMessage ??
+            `You have been challenged at ${owner.name}`,
+        },
+        tokens: notificationSquad,
+      });
+    }
 
     response.set("location", "/challenges/" + challengeId);
     response.status(200).send(challengeId);

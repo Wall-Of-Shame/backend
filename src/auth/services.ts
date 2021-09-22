@@ -30,6 +30,12 @@ async function authWithFirebase(token: string): Promise<VerifiedToken | null> {
   }
 }
 
+export async function sendMessages(
+  message: admin.messaging.MulticastMessage
+): Promise<admin.messaging.BatchResponse> {
+  return admin.messaging().sendMulticast(message);
+}
+
 // Validates a token with Firebase.
 export async function validateToken(
   token: string

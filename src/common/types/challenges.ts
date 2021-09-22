@@ -15,6 +15,7 @@ export interface ChallengePost {
   startAt: string;
   endAt: string;
   type: ChallengeType;
+  notificationMessage?: string;
   participants: string[];
 }
 
