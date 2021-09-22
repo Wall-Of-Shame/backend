@@ -165,7 +165,7 @@ export async function create(
         data: {
           body:
             request.body.notificationMessage ??
-            `You have been challenged at ${owner.name}`,
+            `You have been challenged by ${owner.name}`,
         },
         tokens: notificationSquad,
       });
