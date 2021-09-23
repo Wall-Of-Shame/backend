@@ -786,7 +786,13 @@ export async function acceptChallenge(
 
     const challenge = await prisma.challenge.findUnique({
       where: { challengeId },
-      select: { challengeId: true, startAt: true, endAt: true, ownerId: true },
+      include: {
+        participants: {
+          select: {
+            userId: true,
+          },
+        },
+      },
     });
     if (!challenge) {
       handleNotFoundError(response, "Challenge was not found.");
@@ -855,22 +861,25 @@ export async function acceptChallenge(
     });
 
     // see if need to add contact
-    const existingContact = await prisma.contact.findUnique({
+    const existingContacts = await prisma.contact.findMany({
       where: {
-        pers1_id_pers2_id: {
-          pers1_id: userId,
-          pers2_id: challenge.ownerId,
-        },
+        pers1_id: userId,
       },
       select: {
         pers1_id: true,
-        pers2: true,
+        pers2_id: true,
       },
     });
 
+    // list of users to add as contact
+    // participants (includ owner) -> filter existing
+    const newContacts = challenge.participants.filter(
+      (p) => !existingContacts.find((e) => e.pers2_id === p.userId)
+    );
+
     const currentDate = new Date();
 
-    if (!existingParticipant && !existingContact) {
+    if (!existingParticipant && newContacts.length > 0) {
       await prisma.$transaction([
         prisma.participant.create({
           data: {
@@ -879,14 +888,14 @@ export async function acceptChallenge(
             joined_at: currentDate,
           },
         }),
-        prisma.contact.create({
-          data: {
+        prisma.contact.createMany({
+          data: newContacts.map((n) => ({
             pers1_id: userId,
-            pers2_id: challenge.ownerId,
-          },
+            pers2_id: n.userId,
+          })),
         }),
       ]);
-    } else if (!existingParticipant && existingContact) {
+    } else if (!existingParticipant && newContacts.length === 0) {
       await prisma.participant.create({
         data: {
           challengeId,
@@ -894,7 +903,7 @@ export async function acceptChallenge(
           joined_at: currentDate,
         },
       });
-    } else if (existingParticipant && !existingContact) {
+    } else if (existingParticipant && newContacts.length > 0) {
       await prisma.$transaction([
         prisma.participant.update({
           where: {
@@ -907,14 +916,14 @@ export async function acceptChallenge(
             joined_at: currentDate,
           },
         }),
-        prisma.contact.create({
-          data: {
+        prisma.contact.createMany({
+          data: newContacts.map((n) => ({
             pers1_id: userId,
-            pers2_id: challenge.ownerId,
-          },
+            pers2_id: n.userId,
+          })),
         }),
       ]);
-    } else if (existingParticipant && existingContact) {
+    } else if (existingParticipant && newContacts.length === 0) {
       await prisma.participant.update({
         where: {
           challengeId_userId: {
