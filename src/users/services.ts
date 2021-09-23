@@ -130,6 +130,7 @@ export async function getGlobalWall(): Promise<UserList[]> {
         failedcount: number;
         completecount: number;
         vetoedcount: number;
+        totalfailedcount: number;
       }
     >
   >`
@@ -140,7 +141,7 @@ export async function getGlobalWall(): Promise<UserList[]> {
         AND "avatar_animal" IS NOT NULL
         AND "avatar_color" IS NOT NULL
         AND "avatar_bg" IS NOT NULL
-      ORDER BY failedcount DESC, username ASC
+      ORDER BY totalfailedcount DESC, username ASC
       LIMIT 100
   `;
   // checked via the prisma query
@@ -187,6 +188,7 @@ export async function getUserWall(userId: string): Promise<UserList[]> {
         failedcount: number;
         completecount: number;
         vetoedCount: number;
+        totalfailedcount: number;
       }
     >
   >`
@@ -198,7 +200,7 @@ export async function getUserWall(userId: string): Promise<UserList[]> {
       AND "avatar_color" IS NOT NULL
       AND "avatar_bg" IS NOT NULL
       AND "userId" IN (${Prisma.join(recentIds)})
-    ORDER BY failedcount DESC, username ASC
+    ORDER BY totalfailedcount DESC, username ASC
     LIMIT 100
 `;
 
