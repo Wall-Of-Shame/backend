@@ -1,6 +1,7 @@
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime";
 import parseJSON from "date-fns/parseJSON";
 import { Request, Response } from "express";
+import { orderBy } from "lodash";
 
 import { handleInvalidCredentialsError } from "../auth/handlers";
 import { sendMessages } from "../auth/services";
@@ -388,11 +389,12 @@ export async function index(
     }
     /* eslint-enable @typescript-eslint/no-non-null-assertion,no-inner-declarations */
 
+    const sortedHistory: ChallengeData[] = orderBy(history, ["endAt"], "desc");
     response.status(200).send({
       ongoing,
       pendingStart,
       pendingResponse,
-      history: history.reverse(),
+      history: sortedHistory,
     });
     return;
   } catch (e) {
