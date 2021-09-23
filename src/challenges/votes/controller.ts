@@ -22,6 +22,7 @@ function countAccusers(
   const map: Map<string, string[]> = new Map();
   for (const v of votes) {
     if (map.has(v.victimId)) {
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       const list = map.get(v.victimId)!;
       list.push(v.accuserId);
       map.set(v.victimId, list);
@@ -207,7 +208,9 @@ export async function showVotes(
       .map((p) => ({
         victim: {
           userId: p.userId,
+          // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
           username: p.user.username!,
+          // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
           name: p.user.name!,
           evidenceLink: p.evidence_link ?? undefined,
         },

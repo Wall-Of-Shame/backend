@@ -1,4 +1,3 @@
-import { PrismaClientKnownRequestError } from "@prisma/client/runtime";
 import parseJSON from "date-fns/parseJSON";
 import { Request, Response } from "express";
 import { orderBy } from "lodash";
@@ -841,73 +840,92 @@ export async function acceptChallenge(
       return;
     }
 
-    // see if need to add contact
-    const isNewContact: boolean = await prisma.contact
-      .count({
-        where: {
-          pers1_id: userId,
-          pers2_id: challenge.ownerId,
-        },
-      })
-      .then((count) => count === 0);
-
-    const currentDate = new Date();
-    const updateArgs: Prisma.ParticipantUpdateArgs = {
+    // see if it is an update or create on participant
+    const existingParticipant = await prisma.participant.findUnique({
       where: {
         challengeId_userId: {
-          challengeId,
           userId,
+          challengeId,
         },
-      },
-      data: {
-        joined_at: currentDate,
       },
       select: {
         userId: true,
         challengeId: true,
       },
-    };
+    });
 
-    try {
-      if (!isNewContact) {
-        await prisma.participant.update(updateArgs);
-      } else {
-        await prisma.$transaction([
-          prisma.participant.update(updateArgs),
-          prisma.contact.create({
-            data: {
-              pers1_id: userId,
-              pers2_id: challenge.ownerId,
-            },
-          }),
-        ]);
-      }
-    } catch (e) {
-      const error: PrismaClientKnownRequestError = e as any;
-      // Participant entry not found - likely to be invited by link
-      if (error.code === "P2025") {
-        await prisma.$transaction([
-          prisma.participant.create({
-            data: {
-              userId,
+    // see if need to add contact
+    const existingContact = await prisma.contact.findUnique({
+      where: {
+        pers1_id_pers2_id: {
+          pers1_id: userId,
+          pers2_id: challenge.ownerId,
+        },
+      },
+      select: {
+        pers1_id: true,
+        pers2: true,
+      },
+    });
+
+    const currentDate = new Date();
+
+    if (!existingParticipant && !existingContact) {
+      await prisma.$transaction([
+        prisma.participant.create({
+          data: {
+            challengeId,
+            userId,
+            joined_at: currentDate,
+          },
+        }),
+        prisma.contact.create({
+          data: {
+            pers1_id: userId,
+            pers2_id: challenge.ownerId,
+          },
+        }),
+      ]);
+    } else if (!existingParticipant && existingContact) {
+      await prisma.participant.create({
+        data: {
+          challengeId,
+          userId,
+          joined_at: currentDate,
+        },
+      });
+    } else if (existingParticipant && !existingContact) {
+      await prisma.$transaction([
+        prisma.participant.update({
+          where: {
+            challengeId_userId: {
               challengeId,
-              joined_at: currentDate,
+              userId,
             },
-            select: {
-              userId: true,
-              challengeId: true,
-            },
-          }),
-          prisma.contact.create({
-            data: {
-              pers1_id: userId,
-              pers2_id: challenge.ownerId,
-            },
-          }),
-        ]);
-      } else {
-        throw e;
-      }
+          },
+          data: {
+            joined_at: currentDate,
+          },
+        }),
+        prisma.contact.create({
+          data: {
+            pers1_id: userId,
+            pers2_id: challenge.ownerId,
+          },
+        }),
+      ]);
+    } else if (existingParticipant && existingContact) {
+      await prisma.participant.update({
+        where: {
+          challengeId_userId: {
+            challengeId,
+            userId,
+          },
+        },
+        data: {
+          joined_at: new Date(),
+        },
+      });
     }
 
     response.status(200).send({});
