@@ -232,9 +232,8 @@ export async function index(
       orderBy: {
         challenge: {
           startAt: "asc",
-          endAt: "asc"
-        }
-      }
+        },
+      },
     });
     /** */
     const ongoing: ChallengeData[] = [];
@@ -393,10 +392,11 @@ export async function index(
       ongoing,
       pendingStart,
       pendingResponse,
-      history,
+      history: history.reverse(),
     });
     return;
   } catch (e) {
+    console.log(e);
     handleServerError(request, response);
     return;
   }
