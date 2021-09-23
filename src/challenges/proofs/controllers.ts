@@ -96,6 +96,9 @@ export async function deleteProof(
         evidence_link: null,
       },
     });
+
+    response.status(200).send({});
+    return;
   } catch (e) {
     console.log(e);
     handleServerError(request, response);
