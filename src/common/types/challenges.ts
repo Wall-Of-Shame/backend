@@ -69,6 +69,7 @@ export type UserMini = Pick<
 > & {
   completedAt?: string;
   evidenceLink?: string;
+  hasBeenVetoed: boolean;
 };
 // Deep partial of UserMini
 // This is to support the corner case of user being able to create a challenge without having a username/name/avatar

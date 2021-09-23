@@ -229,6 +229,12 @@ export async function index(
           },
         },
       },
+      orderBy: {
+        challenge: {
+          startAt: "asc",
+          endAt: "asc"
+        }
+      }
     });
     /** */
     const ongoing: ChallengeData[] = [];
@@ -278,6 +284,9 @@ export async function index(
               userId: userId,
               username: username!,
               name: name!,
+              hasBeenVetoed: participant.has_been_vetoed,
+              completedAt: participant.completed_at?.toISOString(),
+              evidenceLink: participant.evidence_link ?? undefined,
               avatar: {
                 animal: avatar_animal!,
                 background: avatar_bg!,
@@ -299,6 +308,7 @@ export async function index(
                 },
                 completedAt: participant.completed_at?.toISOString(),
                 evidenceLink: participant.evidence_link ?? undefined,
+                hasBeenVetoed: participant.has_been_vetoed,
               });
             } else {
               // not completed
@@ -306,6 +316,9 @@ export async function index(
                 userId: userId,
                 username: username!,
                 name: name!,
+                completedAt: undefined,
+                evidenceLink: undefined,
+                hasBeenVetoed: participant.has_been_vetoed,
                 avatar: {
                   animal: avatar_animal!,
                   background: avatar_bg!,
@@ -474,6 +487,7 @@ export async function show(
         },
         completedAt: participant.completed_at?.toISOString(),
         evidenceLink: participant.evidence_link ?? undefined,
+        hasBeenVetoed: participant.has_been_vetoed,
       };
 
       if (hasUserAccepted(participant.joined_at)) {
