@@ -34,6 +34,7 @@ export async function login(
         User & {
           failedcount: number;
           completecount: number;
+          vetoedcount: number;
         }
       >
     >`
@@ -47,12 +48,18 @@ export async function login(
     let user: User & {
       failedcount: number;
       completecount: number;
+      vetoedcount: number;
     };
     if (users.length === 0) {
       user = await createUser({
         email: verifiedToken.email,
         messageToken: reqMessage,
-      }).then((result) => ({ ...result, failedcount: 0, completecount: 0 }));
+      }).then((result) => ({
+        ...result,
+        failedcount: 0,
+        completecount: 0,
+        vetoedcount: 0,
+      }));
     } else {
       user = users[0];
       await prisma.user.update({
@@ -80,6 +87,7 @@ export async function login(
       avatar_bg,
       completecount,
       failedcount,
+      vetoedcount,
     } = user;
     response.status(200).send({
       token,
@@ -90,6 +98,7 @@ export async function login(
         name: username && name ? name : undefined,
         completedChallengeCount: username ? completecount : undefined,
         failedChallengeCount: username ? failedcount : undefined,
+        vetoedChallengeCount: username ? vetoedcount : undefined,
         avatar: {
           animal: username && avatar_animal ? avatar_animal : undefined,
           color: username && avatar_color ? avatar_color : undefined,

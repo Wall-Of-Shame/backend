@@ -39,8 +39,11 @@ export async function getUserRecents(userId: string): Promise<UserFriends[]> {
   const recents: UserList[] = raw.map((contact) => {
     const { userId, username, name, avatar_animal, avatar_color, avatar_bg } =
       contact.pers2;
-    const { completedChallengeCount, failedChallengeCount } =
-      getParticipationStats(contact.pers2.participating_in);
+    const {
+      completedChallengeCount,
+      failedChallengeCount,
+      vetoedChallengeCount,
+    } = getParticipationStats(contact.pers2.participating_in);
     // allow for ! here, since on creation this will be checked
     // see `challenges#accept` and `challenges#create` and `challenges#patch`
     /* eslint-disable @typescript-eslint/no-non-null-assertion*/
@@ -55,6 +58,7 @@ export async function getUserRecents(userId: string): Promise<UserFriends[]> {
       },
       completedChallengeCount,
       failedChallengeCount,
+      vetoedChallengeCount,
     };
     /* eslint-enable @typescript-eslint/no-non-null-assertion*/
   });
@@ -92,8 +96,11 @@ export async function searchUsers(query: string): Promise<UserList[]> {
   const result: UserList[] = raw.map((v) => {
     const { userId, username, name, avatar_animal, avatar_color, avatar_bg } =
       v;
-    const { completedChallengeCount, failedChallengeCount } =
-      getParticipationStats(v.participating_in);
+    const {
+      completedChallengeCount,
+      failedChallengeCount,
+      vetoedChallengeCount,
+    } = getParticipationStats(v.participating_in);
     // checked via the prisma query
     /* eslint-disable @typescript-eslint/no-non-null-assertion*/
     return {
@@ -107,6 +114,7 @@ export async function searchUsers(query: string): Promise<UserList[]> {
       },
       completedChallengeCount,
       failedChallengeCount,
+      vetoedChallengeCount,
     };
     /* eslint-enable @typescript-eslint/no-non-null-assertion*/
   });
@@ -121,6 +129,7 @@ export async function getGlobalWall(): Promise<UserList[]> {
       Required<User> & {
         failedcount: number;
         completecount: number;
+        vetoedcount: number;
       }
     >
   >`
@@ -148,6 +157,7 @@ export async function getGlobalWall(): Promise<UserList[]> {
     },
     completedChallengeCount: r.completecount,
     failedChallengeCount: r.failedcount,
+    vetoedChallengeCount: r.vetoedcount,
   }));
   /* eslint-enable @typescript-eslint/no-non-null-assertion*/
   return result;
@@ -166,11 +176,17 @@ export async function getUserWall(userId: string): Promise<UserList[]> {
     })
     .then((result) => result.map((v) => v.pers2_id));
 
+  if (recentIds.length === 0) {
+    // prisma .join with In doesnt allow for empty error
+    return [];
+  }
+
   const raw = await prisma.$queryRaw<
     Array<
       Required<User> & {
         failedcount: number;
         completecount: number;
+        vetoedCount: number;
       }
     >
   >`
@@ -200,6 +216,7 @@ export async function getUserWall(userId: string): Promise<UserList[]> {
     },
     completedChallengeCount: r.completecount,
     failedChallengeCount: r.failedcount,
+    vetoedChallengeCount: r.vetoedCount,
   }));
   /* eslint-enable @typescript-eslint/no-non-null-assertion*/
 

@@ -92,6 +92,7 @@ export async function show(
         User & {
           failedcount: number;
           completecount: number;
+          vetoedcount: number;
         }
       >
     >`
@@ -119,6 +120,7 @@ export async function show(
       avatar_bg,
       completecount,
       failedcount,
+      vetoedcount,
     } = user;
     response.status(200).send({
       userId,
@@ -127,6 +129,7 @@ export async function show(
       name: username && name ? name : undefined,
       completedChallengeCount: username ? completecount : undefined,
       failedChallengeCount: username ? failedcount : undefined,
+      vetoedChallengeCount: username ? vetoedcount : undefined,
       avatar: {
         animal: username && avatar_animal ? avatar_animal : undefined,
         color: username && avatar_color ? avatar_color : undefined,

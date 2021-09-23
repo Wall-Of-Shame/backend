@@ -48,19 +48,29 @@ export function hasChallengeStarted(start: Date | null): boolean {
 export function getParticipationStats(participantInstances: Participant[]): {
   completedChallengeCount: number;
   failedChallengeCount: number;
+  vetoedChallengeCount: number;
 } {
   let completedChallengeCount = 0;
   let failedChallengeCount = 0;
+  let vetoedChallengeCount = 0;
 
   for (const p of participantInstances) {
     if (p.completed_at) {
-      completedChallengeCount++;
+      if (p.has_been_vetoed) {
+        vetoedChallengeCount++;
+      } else {
+        completedChallengeCount++;
+      }
     } else {
       failedChallengeCount++;
     }
   }
 
-  return { completedChallengeCount, failedChallengeCount };
+  return {
+    completedChallengeCount,
+    failedChallengeCount,
+    vetoedChallengeCount,
+  };
 }
 
 // valid participant instance for counting results

@@ -10,6 +10,7 @@ export interface UserList {
   username: string;
   completedChallengeCount: number;
   failedChallengeCount: number;
+  vetoedChallengeCount: number;
   avatar: Avatar;
 }
 
@@ -21,6 +22,7 @@ export interface UserData {
   name?: string;
   completedChallengeCount?: number;
   failedChallengeCount?: number;
+  vetoedChallengeCount?: number;
   avatar: Partial<Avatar>;
   settings: {
     deadlineReminder: boolean;
