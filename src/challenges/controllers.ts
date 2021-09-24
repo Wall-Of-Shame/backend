@@ -627,7 +627,11 @@ export async function update(
 
       let newRecents: { userId: string }[] | undefined;
       let notificationSquad:
-        | { userId: string; fb_reg_token: string | null }[]
+        | {
+            userId: string;
+            fb_reg_token: string | null;
+            cfg_invites_notif: boolean;
+          }[]
         | undefined;
       const args: Prisma.ChallengeUpdateArgs = {
         where: {
@@ -658,13 +662,16 @@ export async function update(
           select: {
             userId: true,
             fb_reg_token: true,
+            cfg_invites_notif: true,
           },
         });
 
         const createParticipants = participants.filter(
           (p) => !challenge.participants.find((e) => e.userId === p.userId)
         );
-        notificationSquad = createParticipants;
+        notificationSquad = createParticipants.filter(
+          (p) => p.fb_reg_token && p.cfg_invites_notif
+        );
 
         args.data["participants"] = {
           // new participant: exists in the input list, but not in the existing list
@@ -673,11 +680,13 @@ export async function update(
           },
           // removed participant: exists in the existing list, not in the input list
           // do not delete owner as participant
-          deleteMany: challenge.participants.filter(
-            (e) =>
-              e.userId !== challenge.ownerId &&
-              !participants.find((p) => p.userId === e.userId)
-          ).map(p => ({userId: p.userId})),
+          deleteMany: challenge.participants
+            .filter(
+              (e) =>
+                e.userId !== challenge.ownerId &&
+                !participants.find((p) => p.userId === e.userId)
+            )
+            .map((p) => ({ userId: p.userId })),
         };
 
         // newRecents = valid participants (ie users) - owner's existing recents
@@ -718,6 +727,8 @@ export async function update(
             },
           },
         });
+        console.log("success: ", result.successCount);
+        console.log("failures: ", result.failureCount);
       }
 
       response.status(200).send({});
