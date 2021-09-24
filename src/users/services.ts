@@ -77,8 +77,8 @@ export async function searchUsers(query: string): Promise<UserList[]> {
         { avatar_color: { not: null } },
         {
           OR: [
-            { username: { contains: query } },
-            { name: { contains: query } },
+            { username: { contains: query, mode: "insensitive" } },
+            { name: { contains: query, mode: "insensitive" } },
           ],
         },
       ],
