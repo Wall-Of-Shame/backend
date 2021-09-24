@@ -173,9 +173,9 @@ export async function create(
         tokens: notificationSquad,
         webpush: {
           fcmOptions: {
-            link: "https://wallofshame.netlify.app"
-          }
-        }
+            link: "https://wallofshame.netlify.app",
+          },
+        },
       });
       console.log(
         `Succeess: ${result.successCount}\n` +
@@ -626,6 +626,9 @@ export async function update(
       }
 
       let newRecents: { userId: string }[] | undefined;
+      let notificationSquad:
+        | { userId: string; fb_reg_token: string | null }[]
+        | undefined;
       const args: Prisma.ChallengeUpdateArgs = {
         where: {
           challengeId,
@@ -654,14 +657,19 @@ export async function update(
           },
           select: {
             userId: true,
+            fb_reg_token: true,
           },
         });
+
+        const createParticipants = participants.filter(
+          (p) => !challenge.participants.find((e) => e.userId === p.userId)
+        );
+        notificationSquad = createParticipants;
+
         args.data["participants"] = {
           // new participant: exists in the input list, but not in the existing list
           createMany: {
-            data: participants.filter(
-              (p) => !challenge.participants.find((e) => e.userId === p.userId)
-            ),
+            data: createParticipants.map((p) => ({ userId: p.userId })),
           },
           // removed participant: exists in the existing list, not in the input list
           // do not delete owner as participant
@@ -669,7 +677,7 @@ export async function update(
             (e) =>
               e.userId !== challenge.ownerId &&
               !participants.find((p) => p.userId === e.userId)
-          ),
+          ).map(p => ({userId: p.userId})),
         };
 
         // newRecents = valid participants (ie users) - owner's existing recents
@@ -691,6 +699,25 @@ export async function update(
         ]);
       } else {
         await prisma.challenge.update(args);
+      }
+
+      if (notificationSquad && notificationSquad.length > 0) {
+        const result = await sendMessages({
+          notification: {
+            title: "Wall of Shame: Challenge Invitation",
+            body: `You have been challenged by ${challenge.owner.name}`,
+          },
+          tokens: notificationSquad
+            .filter((n) => n.fb_reg_token)
+            // safely assert from filter
+            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+            .map((n) => n.fb_reg_token!),
+          webpush: {
+            fcmOptions: {
+              link: "https://wallofshame.netlify.app",
+            },
+          },
+        });
       }
 
       response.status(200).send({});
