@@ -171,6 +171,11 @@ export async function create(
             `You have been challenged by ${owner.name}`,
         },
         tokens: notificationSquad,
+        webpush: {
+          fcmOptions: {
+            link: "https://wallofshame.netlify.app"
+          }
+        }
       });
       console.log(
         `Succeess: ${result.successCount}\n` +
