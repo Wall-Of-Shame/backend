@@ -141,6 +141,7 @@ export async function getGlobalWall(): Promise<UserList[]> {
         AND "avatar_animal" IS NOT NULL
         AND "avatar_color" IS NOT NULL
         AND "avatar_bg" IS NOT NULL
+        AND "totalfailedcount" > 0
       ORDER BY totalfailedcount DESC, username ASC
       LIMIT 100
   `;
@@ -200,6 +201,7 @@ export async function getUserWall(userId: string): Promise<UserList[]> {
       AND "avatar_color" IS NOT NULL
       AND "avatar_bg" IS NOT NULL
       AND "userId" IN (${Prisma.join(recentIds)})
+      AND "totalfailedcount" > 0
     ORDER BY totalfailedcount DESC, username ASC
     LIMIT 100
 `;
